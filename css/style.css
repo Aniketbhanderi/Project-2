@@ -1,0 +1,50 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #eef3f6;
+  color: #1f2933;
+}
+
+.map-panel {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#my-map {
+  width: 100%;
+  height: 100vh;
+  min-height: 420px;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+#tooltip {
+  position: absolute;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 2px 2px 3px 0px rgb(92 92 92 / 0.5);
+  border: 1px solid #ddd;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+
+.tooltip-label {
+  font-weight: 500;
+  font-size: 10px;
+  color: #888;
+}
+
+@media (max-width: 900px) {
+  .map-panel {
+    height: 100vh;
+  }
+
+  #my-map {
+    height: 100vh;
+    min-height: 360px;
+  }
+}

@@ -1,0 +1,135 @@
+.app-layout {
+  min-height: 100vh;
+}
+
+.filter-panel {
+  position: absolute;
+  top: 14px;
+  left: 55px;
+  z-index: 900;
+  width: 250px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+  box-sizing: border-box;
+}
+
+.filter-panel h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+
+.panel-description {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #52606d;
+}
+
+.filter-label {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #243b53;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid #bcccdc;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #fff;
+  color: #102a43;
+}
+
+.filter-select:focus {
+  outline: 2px solid #9fb3c8;
+  outline-offset: 1px;
+}
+
+.map-style-toggle {
+  margin-top: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid #bcccdc;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f0f4f8;
+  color: #102a43;
+  cursor: pointer;
+}
+
+.map-style-toggle:hover {
+  background: #d9e2ec;
+}
+
+.filter-summary {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #486581;
+}
+
+.selected-point-panel {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #d9e2ec;
+}
+
+.selected-point-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #102a43;
+  margin-bottom: 6px;
+}
+
+.clear-selection-btn {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border: 1px solid #bcccdc;
+  border-radius: 6px;
+  background: #f0f4f8;
+  color: #102a43;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clear-selection-btn:hover {
+  background: #d9e2ec;
+}
+
+.selected-point-details {
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #334e68;
+  background: #f8fbfd;
+  border: 1px solid #d9e2ec;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.detail-row {
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.detail-key {
+  font-weight: 700;
+  color: #243b53;
+}
+
+@media (max-width: 900px) {
+  .filter-panel {
+    width: calc(100% - 28px);
+    max-width: 320px;
+  }
+}
