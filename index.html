@@ -8,42 +8,75 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="app-layout">
-        <main class="map-panel">
-            <aside class="filter-panel">
-                <h1>311 Service Calls</h1>
-                <p class="panel-description">Filter requests by service request type.</p>
-                <label for="sr-type-selector" class="filter-label">Request Type</label>
-                <select id="sr-type-selector" class="filter-select"></select>
-                <label for="color-by-selector" class="filter-label">Color By</label>
-                <select id="color-by-selector" class="filter-select">
-                    <option value="timeGap">Time from Request to Update</option>
-                    <option value="neighborhood">Neighborhood</option>
-                    <option value="priority">Priority</option>
-                    <option value="agency">Public Agency</option>
-                </select>
-                <button id="map-style-toggle" class="map-style-toggle" type="button">Basemap: Aerial</button>
-                <div id="filter-summary" class="filter-summary"></div>
-                <div class="selected-point-panel">
-                    <div class="selected-point-title">Selected Data Point</div>
-                    <button id="clear-selection" class="clear-selection-btn" type="button">Clear Selection</button>
-                    <div id="selected-point-details" class="selected-point-details">Click a point on the map to view all fields.</div>
-                </div>
-            </aside>
-            <div id="my-map"></div>
-        </main>
+
+    <!-- Map: full-viewport base layer -->
+    <div id="my-map"></div>
+
+    <!-- Left column: header panel + toolbar panel stacked -->
+    <div class="left-column">
+        <div class="header-panel">
+            <h1>311 Service Calls</h1>
+            <p class="panel-description">Filter requests by service request type.</p>
+        </div>
+        <div class="toolbar-panel">
+            <label for="sr-type-selector" class="filter-label">Request Type</label>
+            <select id="sr-type-selector" class="filter-select"></select>
+            <label for="color-by-selector" class="filter-label">Color By</label>
+            <select id="color-by-selector" class="filter-select">
+                <option value="timeGap">Time from Request to Update</option>
+                <option value="neighborhood">Neighborhood</option>
+                <option value="priority">Priority</option>
+                <option value="agency">Public Agency</option>
+            </select>
+            <div id="color-legend" class="color-legend"></div>
+            <button id="map-style-toggle" class="map-style-toggle" type="button">Basemap: Aerial</button>
+            <div id="filter-summary" class="filter-summary"></div>
+            <div id="missing-gps" class="missing-gps-info"></div>
+            <div class="selected-point-panel">
+                <div class="selected-point-title">Selected Data Point</div>
+                <button id="clear-selection" class="clear-selection-btn" type="button">Clear Selection</button>
+                <div id="selected-point-details" class="selected-point-details">Click a point on the map to view all fields.</div>
+            </div>
+        </div>
     </div>
-    
-    <script src="js/d3.v6.min.js"></script>
-    <script src="js/leaflet.js"></script>
-    <script src="js/leafletMap.js"></script>
-        <script src="js/filterPanel.js"></script>
-        <script src="js/main.js"></script>
+
+    <!-- Charts panel: right side, full height, 5 charts -->
+    <div class="charts-panel">
+        <div class="chart-card" id="chart-sr-type">
+            <div class="chart-title">Request Types</div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-priority">
+            <div class="chart-title">By Priority</div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-agency">
+            <div class="chart-title">By Agency</div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-timegap">
+            <div class="chart-title">Response Time</div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-neighborhood">
+            <div class="chart-title">By Neighborhood</div>
+            <div class="chart-body"></div>
+        </div>
+    </div>
+
+    <!-- Timeline panel: bottom center, spans between left side and charts panel -->
+    <div class="timeline-panel">
+        <div class="chart-title">Timeline</div>
+        <div class="chart-body" id="chart-timeline"></div>
+    </div>
 
     <div id="tooltip"></div>
 
-
-
+    <script src="js/d3.v6.min.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/leafletMap.js"></script>
+    <script src="js/filterPanel.js"></script>
+    <script src="js/main.js"></script>
 
 </body>
 </html>

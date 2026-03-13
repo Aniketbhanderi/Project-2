@@ -1,48 +1,24 @@
-.app-layout {
-  min-height: 100vh;
-}
-
-.filter-panel {
-  position: absolute;
-  top: 14px;
-  left: 55px;
-  z-index: 900;
-  width: 250px;
-  padding: 12px;
-  background: #ffffff;
-  border: 1px solid #d9e2ec;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
-  box-sizing: border-box;
-}
-
-.filter-panel h1 {
-  margin: 0 0 4px;
-  font-size: 26px;
-}
-
-.panel-description {
-  margin: 0 0 8px;
-  font-size: 12px;
-  line-height: 1.3;
-  color: #52606d;
-}
+/* Form elements inside .toolbar-panel */
 
 .filter-label {
   display: block;
   margin-top: 8px;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #243b53;
 }
 
+.filter-label:first-child {
+  margin-top: 0;
+}
+
 .filter-select {
   width: 100%;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border: 1px solid #bcccdc;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
   background: #fff;
   color: #102a43;
 }
@@ -53,12 +29,12 @@
 }
 
 .map-style-toggle {
-  margin-top: 10px;
+  margin-top: 8px;
   width: 100%;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border: 1px solid #bcccdc;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   background: #f0f4f8;
   color: #102a43;
@@ -69,10 +45,71 @@
   background: #d9e2ec;
 }
 
+/* ── Color legend ─────────────────────────────────────── */
+.color-legend {
+  margin-top: 8px;
+}
+
+.legend-gradient-bar {
+  height: 10px;
+  border-radius: 3px;
+  width: 100%;
+}
+
+.legend-gradient-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #627d98;
+  margin-top: 3px;
+}
+
+.legend-swatch-list {
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+.legend-swatch-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 10px;
+  color: #334e68;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-swatch-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .filter-summary {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 10px;
   color: #486581;
+}
+
+.missing-gps-info:empty {
+  display: none;
+}
+
+.missing-gps-info {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #7b5c1e;
+  background: #fef9ec;
+  border: 1px solid #f0d070;
+  border-radius: 5px;
+  padding: 4px 7px;
+  line-height: 1.4;
 }
 
 .selected-point-panel {
@@ -82,7 +119,7 @@
 }
 
 .selected-point-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #102a43;
   margin-bottom: 6px;
@@ -91,7 +128,7 @@
 .clear-selection-btn {
   width: 100%;
   margin-bottom: 6px;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: 1px solid #bcccdc;
   border-radius: 6px;
   background: #f0f4f8;
@@ -106,30 +143,22 @@
 }
 
 .selected-point-details {
-  max-height: 180px;
   overflow-y: auto;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 10px;
+  line-height: 1.4;
   color: #334e68;
   background: #f8fbfd;
   border: 1px solid #d9e2ec;
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px 8px;
 }
 
 .detail-row {
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   word-break: break-word;
 }
 
 .detail-key {
   font-weight: 700;
   color: #243b53;
-}
-
-@media (max-width: 900px) {
-  .filter-panel {
-    width: calc(100% - 28px);
-    max-width: 320px;
-  }
 }
