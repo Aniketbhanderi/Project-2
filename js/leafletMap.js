@@ -9,11 +9,12 @@ class LeafletMap {
     this.config = {
       parentElement: _config.parentElement,
       onPointSelect: _config.onPointSelect || null,
+      onMapClick: _config.onMapClick || null,
     };
     this.data = _data;
     this.colorBy = 'timeGap';
     this.mapStyle = 'aerial';
-    this.selectedPointId = null;
+    this.selectedPoint = null;
     this.ordinalScale = d3.scaleOrdinal(d3.schemeTableau10);
     this.initVis();
   }
@@ -62,15 +63,18 @@ class LeafletMap {
     L.svg({ clickable: true }).addTo(vis.theMap);
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane);
     vis.svg = vis.overlay.select('svg').attr('pointer-events', 'auto');
+    vis.g = vis.svg.append('g').attr('class', 'leaflet-zoom-hide');
 
     vis.renderVis();
 
-    vis.theMap.on('zoomend', function() {
+    vis.theMap.on('viewreset zoomend move', function() {
       vis.updateVis();
     });
 
     vis.theMap.on('click', function() {
-      vis.clearSelection();
+      if (vis.config.onMapClick) {
+        vis.config.onMapClick();
+      }
     });
   }
 
@@ -85,63 +89,34 @@ class LeafletMap {
       .attr('stroke-width', d => vis.getPointStrokeWidth(d));
   }
 
-  setData(_data) {
-    this.data = _data;
-
-    if (this.selectedPointId !== null && !this.data.some(d => d.SR_NUMBER === this.selectedPointId)) {
-      this.selectedPointId = null;
-      if (this.config.onPointSelect) {
-        this.config.onPointSelect(null);
-      }
+  updateState(globalState, filteredData) {
+    // Handle Basemap toggle
+    if (this.mapStyle !== globalState.mapStyle) {
+      const currentLayer = this.mapStyle === 'aerial' ? this.aerialLayer : this.streetLayer;
+      const nextLayer = globalState.mapStyle === 'aerial' ? this.aerialLayer : this.streetLayer;
+      
+      if (this.theMap.hasLayer(currentLayer)) this.theMap.removeLayer(currentLayer);
+      if (!this.theMap.hasLayer(nextLayer)) this.theMap.addLayer(nextLayer);
+      
+      this.mapStyle = globalState.mapStyle;
     }
 
+    // Update local properties
+    this.colorBy = globalState.colorBy;
+    this.selectedPoint = globalState.selectedPoint;
+    this.data = filteredData;
+
+    // Re-render
     this.updateColorScales();
     this.renderVis();
   }
 
-  clearSelection() {
-    this.selectedPointId = null;
-    this.updateVis();
-
-    if (this.config.onPointSelect) {
-      this.config.onPointSelect(null);
-    }
-  }
-
-  setMapStyle(_style) {
-    const vis = this;
-    const nextStyle = _style || 'aerial';
-
-    if (vis.mapStyle === nextStyle) {
-      return;
-    }
-
-    const currentLayer = vis.mapStyle === 'aerial' ? vis.aerialLayer : vis.streetLayer;
-    const nextLayer = nextStyle === 'aerial' ? vis.aerialLayer : vis.streetLayer;
-
-    if (vis.theMap.hasLayer(currentLayer)) {
-      vis.theMap.removeLayer(currentLayer);
-    }
-
-    if (!vis.theMap.hasLayer(nextLayer)) {
-      vis.theMap.addLayer(nextLayer);
-    }
-
-    vis.mapStyle = nextStyle;
-  }
-
-  setColorBy(_colorBy) {
-    this.colorBy = _colorBy || 'timeGap';
-    this.updateColorScales();
-    this.updateVis();
-  }
-
   getRequestedDate(d) {
-    return new Date(d.DATE_CREATED || d.DATE_TIME_RECEIVED || d.TIME_RECEIVED || '');
+    return new Date(d.DATE_CREATED || '');
   }
 
   getUpdatedDate(d) {
-    return new Date(d.DATE_LAST_UPDATE || d.DATE_STATUS_CHANGE || d.DATE_CLOSED || '');
+    return new Date(d.DATE_LAST_UPDATE || d.DATE_CLOSED || '');
   }
 
   getTimeGapDays(d) {
@@ -202,11 +177,13 @@ class LeafletMap {
   getPointRadius(d) {
     const zoom = this.theMap ? this.theMap.getZoom() : 2;
     const baseRadius = Math.max(3, Math.min(10, 2.5 + (zoom * 0.35)));
-    return d.SR_NUMBER === this.selectedPointId ? baseRadius + 2 : baseRadius;
+    const isSelected = this.selectedPoint && d.SR_NUMBER === this.selectedPoint.SR_NUMBER;
+    return isSelected ? baseRadius + 2 : baseRadius;
   }
 
   getPointStrokeWidth(d) {
-    return d.SR_NUMBER === this.selectedPointId ? 2 : 1;
+    const isSelected = this.selectedPoint && d.SR_NUMBER === this.selectedPoint.SR_NUMBER;
+    return isSelected ? 2 : 1;
   }
 
   renderVis() {
@@ -214,22 +191,27 @@ class LeafletMap {
 
     vis.updateColorScales();
 
-    vis.Dots = vis.svg.selectAll('circle')
+    console.log(`[renderVis] Attempting to draw ${vis.data.length} points.`);
+
+    vis.Dots = vis.g.selectAll('circle')
       .data(vis.data, d => d.SR_NUMBER)
       .join(
         enter => enter.append('circle')
+          .style('cursor', 'pointer')
           .attr('fill', d => vis.getPointColor(d))
           .attr('stroke', 'black')
           .attr('r', d => vis.getPointRadius(d)),
         update => update,
         exit => exit.remove()
-      )
+      );
+    
+    vis.Dots
       .style('cursor', 'pointer')
       .on('mouseover', function(event, d) {
         d3.select(this)
           .transition()
           .duration('150')
-          .attr('fill', 'red')
+          .attr('stroke', 'red')
           .attr('r', vis.getPointRadius(d) + 1.5);
 
         d3.select('#tooltip')
@@ -237,7 +219,7 @@ class LeafletMap {
           .style('z-index', 1000000)
           .html(`<div class="tooltip-label">
             <strong>Call Date:</strong> ${d.DATE_CREATED || d.DATE_TIME_RECEIVED || 'N/A'}<br>
-            <strong>Updated Date:</strong> ${d.DATE_LAST_UPDATE || d.DATE_STATUS_CHANGE || 'N/A'}<br>
+            <strong>Last Update Date:</strong> ${d.DATE_LAST_UPDATE || d.DATE_CLOSED || 'N/A'}<br>
             <strong>Agency:</strong> ${d.DEPT_NAME || 'N/A'}<br>
             <strong>Call Type:</strong> ${d.SR_TYPE || 'N/A'}<br>
             <strong>Description:</strong> ${d.SR_TYPE_DESC || d.GROUP_DESC || 'N/A'}
@@ -252,16 +234,13 @@ class LeafletMap {
         d3.select(this)
           .transition()
           .duration('150')
-          .attr('fill', d => vis.getPointColor(d))
+          .attr('stroke', 'black')
           .attr('r', d => vis.getPointRadius(d));
 
         d3.select('#tooltip').style('opacity', 0);
       })
       .on('click', function(event, d) {
         event.stopPropagation();
-        vis.selectedPointId = d.SR_NUMBER;
-        vis.updateVis();
-
         if (vis.config.onPointSelect) {
           vis.config.onPointSelect(d);
         }
@@ -276,7 +255,17 @@ class LeafletMap {
 
     if (validPoints.length > 0) {
       const bounds = L.latLngBounds(validPoints.map(d => [d.latitude, d.longitude]));
-      vis.theMap.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
+      const leftColW = document.querySelector('.left-column')?.offsetWidth || 270;
+      const chartsW = document.querySelector('.charts-panel')?.offsetWidth || 330;
+      const timelineH = document.querySelector('.timeline-panel')?.offsetHeight || 130;
+
+      vis.theMap.fitBounds(bounds, {
+        paddingTopLeft: [55 + leftColW - 400, 50],
+        paddingBottomRight:[12 + chartsW + 20,  12 + timelineH + 20],
+        maxZoom: 14
+      });
+      vis.theMap.setZoom(Math.min(vis.theMap.getZoom(), 14));
+      vis.theMap.setMinZoom(vis.theMap.getZoom());
     }
   }
 }
