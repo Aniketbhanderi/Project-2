@@ -3,6 +3,8 @@ let leafletMap;
 let filterPanel;
 let neighborhoodHeatmap;
 let priorityPieChart;
+let methodChart;
+let deptChart;
 let allData = [];
 
 // Establish the Global State Object
@@ -53,6 +55,10 @@ function updateApp() {
 
   // Push state to the filter panel
   filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData);
+
+  // Update bar charts with filtered data
+  methodChart.update(filteredData);
+  deptChart.update(filteredData);
 
   // Keep neighborhood heatmap in sync with current request-type filter.
   neighborhoodHeatmap.updateData(typeFilteredData, effectiveNeighborhood);
@@ -113,6 +119,21 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedPoint: null });
       }
     });
+
+    methodChart = new BarChart({
+      parentElement: '#chart-method-received .chart-body',
+      xKey: 'METHOD_RECEIVED',
+      yKey: 'Requests',
+      scrollable: true,
+      margin: { top: 6, right: 32, bottom: 6, left: 52 }
+    }, allData);
+
+    deptChart = new BarChart({
+      parentElement: '#chart-agency .chart-body',
+      xKey: 'DEPT_NAME',
+      yKey: 'Requests',
+      scrollable: true
+    }, allData);
 
     // Run initial update to sync everything
     updateApp();
