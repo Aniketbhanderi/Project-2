@@ -103,8 +103,6 @@ d3.csv('data/311_sample_preprocessed_data.csv')
       }
     }, allData);
 
-<<<<<<< Updated upstream
-=======
     // Initialize city-wide grid heatmap overlay
     cityGridHeatmap = new CityGridHeatmap({
       map: leafletMap.theMap
@@ -113,7 +111,6 @@ d3.csv('data/311_sample_preprocessed_data.csv')
     // Initialize Neighborhood Heatmap
     console.log('🔥 Loading Neighborhood Heatmap...');
     const heatmapStart = performance.now();
->>>>>>> Stashed changes
     neighborhoodHeatmap = new NeighborhoodHeatmap({
       parentElement: '#chart-neighborhood .chart-body',
       legendElement: '#chart-neighborhood .chart-legend-container',
