@@ -119,7 +119,7 @@ class FilterPanel {
   }
 
   // Called by main.js whenever global state changes
-  updateUI(globalState, visibleCount, totalCount, filteredData) {
+  updateUI(globalState, visibleCount, totalCount, filteredData, colorBaseData) {
     // 1. Sync Map Style Button Text
     this.mapStyleToggle.textContent = globalState.mapStyle === 'aerial'
       ? 'Basemap: Aerial'
@@ -133,10 +133,19 @@ class FilterPanel {
     const totalTypes = this.typeSelector.options.length - 1; // minus "ALL"
     this.filterSummary.textContent = `${visibleCount} points visible across ${totalTypes} request types.`;
 
-    // 4. Update Color Legend
-    this.renderColorLegend(globalState, filteredData || []);
+    // 4. Update Color Legend (use colorBaseData so legend stays stable during cross-chart filtering)
+    this.renderColorLegend(globalState, colorBaseData || filteredData || []);
 
-    // 5. Update Selected Point Panel
+    // 5. Show clear button whenever any chart selection is active
+    const hasAnySelection = globalState.selectedPoint !== null
+      || (globalState.selectedSrTypes || []).length > 0
+      || (globalState.selectedNeighborhoods || []).length > 0
+      || (globalState.selectedPriorities || []).length > 0
+      || (globalState.selectedAgencies || []).length > 0
+      || (globalState.selectedMethods || []).length > 0;
+    this.clearSelectionButton.style.display = hasAnySelection ? 'block' : 'none';
+
+    // 6. Update Selected Point Panel
     if (!globalState.selectedPoint) {
       this.selectedPointPanel.style.display = 'none';
       this.selectedPointDetails.innerHTML = '';

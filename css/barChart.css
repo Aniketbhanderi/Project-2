@@ -2,13 +2,25 @@
 
 /* Bars */
 .bar-chart-bar {
-  fill: #3b82c4;
   rx: 2;
-  transition: fill 0.15s ease;
+  cursor: pointer;
 }
 
-.bar-chart-bar:hover {
-  fill: #1e5fa8;
+.bar-chart-bar.active {
+  stroke: #d64545;
+  stroke-width: 2;
+}
+
+#tooltip .bar-tooltip {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #102a43;
+}
+
+#tooltip .bar-tooltip strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b2138;
 }
 
 /* Value labels to the right of each bar */

@@ -127,6 +127,7 @@
 
 .clear-selection-btn {
   width: 100%;
+  margin-top: 8px;
   margin-bottom: 6px;
   padding: 5px 8px;
   border: 1px solid #bcccdc;

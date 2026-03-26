@@ -2,10 +2,11 @@ class NeighborhoodHeatmap {
   constructor(_config) {
     this.config = {
       parentElement: _config.parentElement,
+      legendElement: _config.legendElement || null,
       onTileSelect: _config.onTileSelect || null
     };
 
-    this.selectedNeighborhood = 'ALL';
+    this.selectedNeighborhoods = [];
     this.tilesData = [];
     this.totalCount = 0;
     this.tooltipOffset = 12;
@@ -42,10 +43,10 @@ class NeighborhoodHeatmap {
     });
   }
 
-  updateData(data, selectedNeighborhood) {
+  updateData(data, selectedNeighborhoods, colorBaseData) {
     const vis = this;
 
-    vis.selectedNeighborhood = selectedNeighborhood || 'ALL';
+    vis.selectedNeighborhoods = selectedNeighborhoods || [];
 
     vis.tilesData = d3.rollups(
       data,
@@ -58,8 +59,32 @@ class NeighborhoodHeatmap {
       .map(([neighborhood, count]) => ({ neighborhood, count }))
       .sort((a, b) => d3.descending(a.count, b.count) || d3.ascending(a.neighborhood, b.neighborhood));
 
+    // Compute color scale domain from colorBaseData so tile colors stay stable during cross-filtering
+    const baseData = colorBaseData || data;
+    const baseCounts = d3.rollups(baseData, v => v.length, d => (d.NEIGHBORHOOD || '').trim() || 'Unknown')
+      .map(([, count]) => count);
+    const baseExtent = d3.extent(baseCounts);
+    vis.colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
+      .domain(baseExtent[0] === baseExtent[1] ? [baseExtent[0], baseExtent[0] + 1] : baseExtent);
+
     vis.totalCount = d3.sum(vis.tilesData, d => d.count);
+    vis.renderLegend();
     vis.renderVis();
+  }
+
+  renderLegend() {
+    const vis = this;
+    if (!vis.config.legendElement) return;
+    const container = document.querySelector(vis.config.legendElement);
+    if (!container || !vis.colorScale) return;
+    const max = vis.colorScale.domain()[1];
+    const stops = d3.range(11).map(i => d3.interpolateYlGnBu(i / 10));
+    container.innerHTML = `
+      <div class="legend-gradient-bar" style="background: linear-gradient(to right, ${stops.join(',')})"></div>
+      <div class="legend-gradient-labels">
+        <span>0 calls</span>
+        <span>${Math.round(max)} calls</span>
+      </div>`;
   }
 
   renderVis() {
@@ -87,10 +112,7 @@ class NeighborhoodHeatmap {
 
     vis.svg.attr('width', width).attr('height', height);
 
-    const counts = vis.tilesData.map(d => d.count);
-    const extent = d3.extent(counts);
-    const colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-      .domain(extent[0] === extent[1] ? [extent[0], extent[0] + 1] : extent);
+    const colorScale = vis.colorScale || d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
 
     const tiles = vis.g
       .selectAll('.heatmap-tile')
@@ -132,9 +154,12 @@ class NeighborhoodHeatmap {
         vis.tooltip.style('opacity', 0);
       })
       .on('click', (_, d) => {
-        const nextNeighborhood = vis.selectedNeighborhood === d.neighborhood ? 'ALL' : d.neighborhood;
+        const n = d.neighborhood;
+        const next = vis.selectedNeighborhoods.includes(n)
+          ? vis.selectedNeighborhoods.filter(x => x !== n)
+          : [...vis.selectedNeighborhoods, n];
         if (vis.config.onTileSelect) {
-          vis.config.onTileSelect(nextNeighborhood);
+          vis.config.onTileSelect(next);
         }
       });
 
@@ -143,8 +168,9 @@ class NeighborhoodHeatmap {
       .attr('width', tileSize)
       .attr('height', tileSize)
       .attr('fill', d => colorScale(d.count))
+      .attr('opacity', d => vis.selectedNeighborhoods.length === 0 || vis.selectedNeighborhoods.includes(d.neighborhood) ? 1 : 0.2)
       .attr('class', d => {
-        const active = vis.selectedNeighborhood === d.neighborhood;
+        const active = vis.selectedNeighborhoods.includes(d.neighborhood);
         return active ? 'heatmap-rect active' : 'heatmap-rect';
       });
 

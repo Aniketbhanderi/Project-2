@@ -12,6 +12,7 @@ class LeafletMap {
       onMapClick: _config.onMapClick || null,
     };
     this.data = _data;
+    this.colorData = _data;
     this.colorBy = 'timeGap';
     this.mapStyle = 'aerial';
     this.selectedPoint = null;
@@ -89,15 +90,15 @@ class LeafletMap {
       .attr('stroke-width', d => vis.getPointStrokeWidth(d));
   }
 
-  updateState(globalState, filteredData) {
+  updateState(globalState, filteredData, colorBaseData) {
     // Handle Basemap toggle
     if (this.mapStyle !== globalState.mapStyle) {
       const currentLayer = this.mapStyle === 'aerial' ? this.aerialLayer : this.streetLayer;
       const nextLayer = globalState.mapStyle === 'aerial' ? this.aerialLayer : this.streetLayer;
-      
+
       if (this.theMap.hasLayer(currentLayer)) this.theMap.removeLayer(currentLayer);
       if (!this.theMap.hasLayer(nextLayer)) this.theMap.addLayer(nextLayer);
-      
+
       this.mapStyle = globalState.mapStyle;
     }
 
@@ -105,6 +106,9 @@ class LeafletMap {
     this.colorBy = globalState.colorBy;
     this.selectedPoint = globalState.selectedPoint;
     this.data = filteredData;
+    // colorBaseData is filtered only by Request Type (not chart clicks),
+    // so color scales stay stable when cross-filtering between charts
+    this.colorData = colorBaseData || filteredData;
 
     // Re-render
     this.updateColorScales();
@@ -134,7 +138,7 @@ class LeafletMap {
     const vis = this;
 
     if (vis.colorBy === 'timeGap') {
-      const values = vis.data
+      const values = vis.colorData
         .map(d => vis.getTimeGapDays(d))
         .filter(v => Number.isFinite(v));
       const extent = values.length > 0 ? d3.extent(values) : [0, 1];
@@ -145,11 +149,11 @@ class LeafletMap {
 
     let categories;
     if (vis.colorBy === 'neighborhood') {
-      categories = [...new Set(vis.data.map(d => d.NEIGHBORHOOD || 'Unknown'))];
+      categories = [...new Set(vis.colorData.map(d => d.NEIGHBORHOOD || 'Unknown'))];
     } else if (vis.colorBy === 'priority') {
-      categories = [...new Set(vis.data.map(d => d.PRIORITY || 'Unknown'))];
+      categories = [...new Set(vis.colorData.map(d => d.PRIORITY || 'Unknown'))];
     } else {
-      categories = [...new Set(vis.data.map(d => d.DEPT_NAME || 'Unknown'))];
+      categories = [...new Set(vis.colorData.map(d => d.DEPT_NAME || 'Unknown'))];
     }
 
     vis.ordinalScale.domain(categories.sort(d3.ascending));
