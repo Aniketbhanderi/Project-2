@@ -75,11 +75,19 @@ class FilterPanel {
           <span>${Math.round(minDays)} days</span>
           <span>${Math.round(maxDays)} days</span>
         </div>`;
+    } else if (globalState.colorBy === 'priority') {
+      // Use the same fixed color map as the pie chart
+      const labelMap = { 'STANDARD': 'Standard', 'HAZARDOUS': 'Hazardous', 'PRIORITY': 'Priority' };
+      const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => `
+        <div class="legend-swatch-item">
+          <span class="legend-swatch" style="background:${color}"></span>
+          <span class="legend-swatch-label">${labelMap[key] || key}</span>
+        </div>`).join('');
+      this.colorLegend.innerHTML = `<div class="legend-swatch-list">${items}</div>`;
     } else {
-      // Ordinal scale — mirror domain logic from leafletMap.js
+      // Ordinal scale for neighborhood and agency
       const accessor = {
         neighborhood: d => d.NEIGHBORHOOD || 'Unknown',
-        priority:     d => d.PRIORITY     || 'Unknown',
         agency:       d => d.DEPT_NAME    || 'Unknown',
       }[globalState.colorBy];
 

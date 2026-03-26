@@ -147,14 +147,12 @@ class LeafletMap {
       return;
     }
 
-    let categories;
-    if (vis.colorBy === 'neighborhood') {
-      categories = [...new Set(vis.colorData.map(d => d.NEIGHBORHOOD || 'Unknown'))];
-    } else if (vis.colorBy === 'priority') {
-      categories = [...new Set(vis.colorData.map(d => d.PRIORITY || 'Unknown'))];
-    } else {
-      categories = [...new Set(vis.colorData.map(d => d.DEPT_NAME || 'Unknown'))];
-    }
+    // Priority uses the fixed PRIORITY_COLORS map — no ordinal domain needed
+    if (vis.colorBy === 'priority') return;
+
+    const categories = vis.colorBy === 'neighborhood'
+      ? [...new Set(vis.colorData.map(d => d.NEIGHBORHOOD || 'Unknown'))]
+      : [...new Set(vis.colorData.map(d => d.DEPT_NAME || 'Unknown'))];
 
     vis.ordinalScale.domain(categories.sort(d3.ascending));
   }
@@ -172,7 +170,7 @@ class LeafletMap {
     }
 
     if (vis.colorBy === 'priority') {
-      return vis.ordinalScale(d.PRIORITY || 'Unknown');
+      return PRIORITY_COLORS[d.PRIORITY || 'Unknown'] || PRIORITY_COLOR_DEFAULT;
     }
 
     return vis.ordinalScale(d.DEPT_NAME || 'Unknown');
