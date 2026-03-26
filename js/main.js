@@ -2,6 +2,7 @@
 let leafletMap;
 let filterPanel;
 let neighborhoodHeatmap;
+let cityGridHeatmap;
 let priorityPieChart;
 let srTypeChart;
 let methodChart;
@@ -18,6 +19,7 @@ const globalState = {
   selectedMethods: [],
   colorBy: 'timeGap',
   mapStyle: 'aerial',
+  showCityHeatmap: false,
   selectedPoint: null,
   brushedPoints: [] // Placeholder for future brushing
 };
@@ -60,6 +62,9 @@ function updateApp() {
   const forMethodBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedAgencies, getAgency);
 
   leafletMap.updateState(globalState, finalFilteredData, typeFilteredData);
+  if (cityGridHeatmap) {
+    cityGridHeatmap.updateData(finalFilteredData, globalState.showCityHeatmap);
+  }
   filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData, typeFilteredData);
 
   srTypeChart.update(forSrTypeBar, globalState.selectedSrTypes, typeFilteredData);
@@ -117,6 +122,11 @@ d3.csv('data/311_sample_preprocessed_data.csv')
     }, allData);
     const mapEnd = performance.now();
     console.log(`✅ Leaflet Map loaded in ${(mapEnd - mapStart).toFixed(2)}ms`);
+
+    // Initialize city-wide grid heatmap overlay
+    cityGridHeatmap = new CityGridHeatmap({
+      map: leafletMap.theMap
+    }, allData);
 
     // Initialize Neighborhood Heatmap
     console.log('🔥 Loading Neighborhood Heatmap...');
