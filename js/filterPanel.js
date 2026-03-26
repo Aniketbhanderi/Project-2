@@ -6,6 +6,7 @@ class FilterPanel {
     this.typeSelector = document.querySelector('#sr-type-selector');
     this.colorBySelector = document.querySelector('#color-by-selector');
     this.mapStyleToggle = document.querySelector('#map-style-toggle');
+    this.cityHeatmapToggle = document.querySelector('#city-heatmap-toggle');
     this.filterSummary = document.querySelector('#filter-summary');
     this.selectedPointPanel = document.querySelector('.selected-point-panel');
     this.selectedPointDetails = document.querySelector('#selected-point-details');
@@ -33,6 +34,13 @@ class FilterPanel {
       const nextStyle = currentStyle === 'aerial' ? 'streets' : 'aerial';
       this.config.onFilterChange({ mapStyle: nextStyle });
     });
+
+    if (this.cityHeatmapToggle) {
+      this.cityHeatmapToggle.addEventListener('click', () => {
+        const isOn = this.cityHeatmapToggle.textContent.includes('On');
+        this.config.onFilterChange({ showCityHeatmap: !isOn });
+      });
+    }
 
     this.clearSelectionButton.addEventListener('click', () => {
       if (this.config.onClearSelection) {
@@ -132,6 +140,12 @@ class FilterPanel {
     this.mapStyleToggle.textContent = globalState.mapStyle === 'aerial'
       ? 'Basemap: Aerial'
       : 'Basemap: Roads/Boundaries';
+    if (this.cityHeatmapToggle) {
+      this.cityHeatmapToggle.textContent = globalState.showCityHeatmap
+        ? 'City Heatmap: On'
+        : 'City Heatmap: Off';
+      this.cityHeatmapToggle.classList.toggle('active', !!globalState.showCityHeatmap);
+    }
 
     // 2. Sync Selectors (in case state was changed externally)
     this.typeSelector.value = globalState.selectedType;
