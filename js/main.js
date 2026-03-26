@@ -1,4 +1,3 @@
-
 let leafletMap;
 let filterPanel;
 let neighborhoodHeatmap;
@@ -67,11 +66,14 @@ function updateApp() {
   }
   filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData, typeFilteredData);
 
-  srTypeChart.update(forSrTypeBar, globalState.selectedSrTypes, typeFilteredData);
-  deptChart.update(forAgencyBar, globalState.selectedAgencies, typeFilteredData);
-  methodChart.update(forMethodBar, globalState.selectedMethods, typeFilteredData);
-  neighborhoodHeatmap.updateData(forHeatmap, globalState.selectedNeighborhoods, typeFilteredData);
-  priorityPieChart.updateData(forPieChart, globalState.selectedPriorities, typeFilteredData);
+  // When a map brush is active, charts show only the brushed subset so all views stay in sync
+  const brushData = globalState.brushedPoints.length > 0 ? globalState.brushedPoints : null;
+
+  srTypeChart.update(brushData || forSrTypeBar, globalState.selectedSrTypes, typeFilteredData);
+  deptChart.update(brushData || forAgencyBar, globalState.selectedAgencies, typeFilteredData);
+  methodChart.update(brushData || forMethodBar, globalState.selectedMethods, typeFilteredData);
+  neighborhoodHeatmap.updateData(brushData || forHeatmap, globalState.selectedNeighborhoods, typeFilteredData);
+  priorityPieChart.updateData(brushData || forPieChart, globalState.selectedPriorities, typeFilteredData);
 }
 // Performance tracking
 const appStartTime = performance.now();
@@ -127,6 +129,28 @@ d3.csv('data/311_sample_preprocessed_data.csv')
     cityGridHeatmap = new CityGridHeatmap({
       map: leafletMap.theMap
     }, allData);
+
+    // Brush Map toggle button for selecting points by drawing a rectangle on the map
+    const brushMapBtn = document.createElement('button');
+    brushMapBtn.id        = 'brush-map-btn';
+    brushMapBtn.className = 'map-style-toggle';
+    brushMapBtn.type      = 'button';
+    brushMapBtn.textContent = '⬚  Brush Map: Off';
+    brushMapBtn.addEventListener('click', () => {
+      const isNowOn = leafletMap.toggleBrushMode();
+      if (isNowOn) {
+        brushMapBtn.textContent       = '⬚  Brush Map: ON';
+        brushMapBtn.style.background  = '#bee3f8';
+        brushMapBtn.style.borderColor = '#63b3ed';
+        brushMapBtn.style.color       = '#1a365d';
+      } else {
+        brushMapBtn.textContent       = '⬚  Brush Map: Off';
+        brushMapBtn.style.background  = '';
+        brushMapBtn.style.borderColor = '';
+        brushMapBtn.style.color       = '';
+      }
+    });
+    document.querySelector('.toolbar-panel').appendChild(brushMapBtn);
 
     // Initialize Neighborhood Heatmap
     console.log('🔥 Loading Neighborhood Heatmap...');

@@ -17,6 +17,7 @@ class LeafletMap {
     this.mapStyle = 'aerial';
     this.selectedPoint = null;
     this.ordinalScale = d3.scaleOrdinal(d3.schemeTableau10);
+    this.brushMode = false;
     this.initVis();
   }
 
@@ -76,10 +77,86 @@ class LeafletMap {
     });
 
     vis.theMap.on('click', function() {
-      if (vis.config.onMapClick) {
+      if (!vis.brushMode && vis.config.onMapClick) {
         vis.config.onMapClick();
       }
     });
+
+    // Brush SVG overlay sits above the map but below the UI panels
+    vis.brushSvg = d3.select('body')
+      .append('svg')
+      .attr('id', 'map-brush-svg')
+      .style('position', 'fixed')
+      .style('inset', '0')
+      .style('width', '100vw')
+      .style('height', '100vh')
+      .style('z-index', '850')
+      .style('pointer-events', 'none');
+
+    vis.brushSvg.append('style').text(`
+      #map-brush-svg .selection {
+        fill: #3182ce; fill-opacity: 0.08;
+        stroke: #3182ce; stroke-width: 1.5; stroke-dasharray: 5 3;
+      }
+      #map-brush-svg .handle { fill: #3182ce; opacity: 0.4; }
+    `);
+
+    vis.brushG = vis.brushSvg.append('g');
+
+    vis.mapBrush = d3.brush()
+      .on('end', event => vis._onMapBrushEnd(event));
+  }
+
+  /**
+   * Handles the end of a map brush selection, collecting points within the rectangle.
+   */
+  _onMapBrushEnd(event) {
+    const vis = this;
+    if (!event.sourceEvent) return;
+
+    if (!event.selection) {
+      globalState.brushedPoints = [];
+      updateApp();
+      return;
+    }
+
+    const [[px0, py0], [px1, py1]] = event.selection;
+
+    // #my-map is fixed at viewport origin so container points equal viewport points
+    const selected = vis.data.filter(d => {
+      const pt = vis.theMap.latLngToContainerPoint([d.latitude, d.longitude]);
+      return pt.x >= px0 && pt.x <= px1 && pt.y >= py0 && pt.y <= py1;
+    });
+
+    globalState.brushedPoints = selected;
+    console.log(`[mapBrush] ${selected.length} points selected`);
+    updateApp();
+  }
+
+  /**
+   * Toggles brush selection mode on the map. Returns the new mode state.
+   */
+  toggleBrushMode() {
+    const vis = this;
+    vis.brushMode = !vis.brushMode;
+
+    if (vis.brushMode) {
+      vis.mapBrush.extent([[0, 0], [window.innerWidth, window.innerHeight]]);
+      vis.brushG.call(vis.mapBrush);
+      vis.brushSvg.style('pointer-events', 'all');
+      vis.theMap.dragging.disable();
+      vis.theMap.scrollWheelZoom.disable();
+      vis.theMap.doubleClickZoom.disable();
+    } else {
+      vis.brushSvg.style('pointer-events', 'none');
+      vis.brushG.selectAll('*').remove();
+      globalState.brushedPoints = [];
+      vis.theMap.dragging.enable();
+      vis.theMap.scrollWheelZoom.enable();
+      vis.theMap.doubleClickZoom.enable();
+      updateApp();
+    }
+    return vis.brushMode;
   }
 
   updateVis() {
@@ -90,7 +167,8 @@ class LeafletMap {
       .attr('cy', d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr('fill', d => vis.getPointColor(d))
       .attr('r', d => vis.getPointRadius(d))
-      .attr('stroke-width', d => vis.getPointStrokeWidth(d));
+      .attr('stroke-width', d => vis.getPointStrokeWidth(d))
+      .attr('opacity', d => vis.getPointOpacity(d));
   }
 
   updateState(globalState, filteredData, colorBaseData) {
@@ -178,6 +256,11 @@ class LeafletMap {
     }
 
     return vis.ordinalScale(d.DEPT_NAME || 'Unknown');
+  }
+
+  getPointOpacity(d) {
+    if (!globalState.brushedPoints || globalState.brushedPoints.length === 0) return 1;
+    return globalState.brushedPoints.some(b => b.SR_NUMBER === d.SR_NUMBER) ? 1 : 0.15;
   }
 
   getPointRadius(d) {
