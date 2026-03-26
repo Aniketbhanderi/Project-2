@@ -66,6 +66,9 @@ class LeafletMap {
     vis.svg = vis.overlay.select('svg').attr('pointer-events', 'auto');
     vis.g = vis.svg.append('g').attr('class', 'leaflet-zoom-hide');
 
+    // Add clear button control
+    vis.addClearButtonControl();
+
     vis.renderVis();
 
     vis.theMap.on('viewreset zoomend move', function() {
@@ -113,6 +116,7 @@ class LeafletMap {
     // Re-render
     this.updateColorScales();
     this.renderVis();
+    this.updateClearButtonState();
   }
 
   getRequestedDate(d) {
@@ -268,6 +272,61 @@ class LeafletMap {
       });
       vis.theMap.setZoom(Math.min(vis.theMap.getZoom(), 14));
       vis.theMap.setMinZoom(vis.theMap.getZoom());
+    }
+  }
+
+  addClearButtonControl() {
+    let vis = this;
+
+    const ClearControl = L.Control.extend({
+      options: {
+        position: 'topright'
+      },
+      onAdd: function(map) {
+        const container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+        const button = L.DomUtil.create('button', 'leaflet-control-clear', container);
+        button.innerHTML = 'Clear';
+        button.style.cssText = 'background-color: #e74c3c; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; opacity: 0.4; transition: all 0.2s;';
+        button.disabled = !vis.selectedPoint;
+
+        button.addEventListener('mouseover', function() {
+          if (vis.selectedPoint) {
+            this.style.backgroundColor = '#000000';
+          }
+        });
+
+        button.addEventListener('mouseleave', function() {
+          if (vis.selectedPoint) {
+            this.style.backgroundColor = '#e74c3c';
+          }
+        });
+
+        button.addEventListener('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          L.DomEvent.preventDefault(e);
+          if (vis.selectedPoint && vis.config.onPointSelect) {
+            vis.config.onPointSelect(null);
+          }
+        });
+
+        return container;
+      }
+    });
+
+    vis.clearControl = new ClearControl();
+    vis.clearControl.addTo(vis.theMap);
+  }
+
+  updateClearButtonState() {
+    let vis = this;
+    if (vis.clearControl) {
+      const button = vis.clearControl._container.querySelector('.leaflet-control-clear');
+      if (button) {
+        const hasSelection = !!vis.selectedPoint;
+        button.style.opacity = hasSelection ? '1' : '0.4';
+        button.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
+        button.disabled = !hasSelection;
+      }
     }
   }
 }

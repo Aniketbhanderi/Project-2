@@ -57,12 +57,62 @@ class PriorityPieChart {
     const container = document.querySelector(vis.config.legendElement);
     if (!container) return;
     const labelMap = { 'STANDARD': 'Standard', 'HAZARDOUS': 'Hazardous', 'PRIORITY': 'Priority' };
-    const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => `
-      <div class="legend-swatch-item">
-        <span class="legend-swatch" style="background:${color}"></span>
-        <span class="legend-swatch-label">${labelMap[key] || key}</span>
-      </div>`).join('');
-    container.innerHTML = `<div class="legend-swatch-list" style="display:flex;gap:8px;flex-wrap:wrap;">${items}</div>`;
+    const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => {
+      const isSelected = vis.selectedPriorities.includes(key);
+      return `
+        <div class="legend-swatch-item" data-priority="${key}" style="cursor:pointer;opacity:${isSelected ? 1 : 0.7};transition:opacity 0.2s;">
+          <span class="legend-swatch" style="background:${color};border:${isSelected ? '2px solid #333' : '2px solid transparent'};transition:border 0.2s;"></span>
+          <span class="legend-swatch-label">${labelMap[key] || key}</span>
+        </div>`;
+    }).join('');
+    
+    const clearButtonStyle = vis.selectedPriorities.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <div class="legend-swatch-list" style="display:flex;gap:8px;flex-wrap:wrap;">${items}</div>
+        <button class="chart-clear-btn" data-chart="pie-${Math.random()}" style="background-color: #f28b82; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap; ${clearButtonStyle}">Clear</button>
+      </div>`;
+    
+    // Add click handlers to legend items
+    container.querySelectorAll('.legend-swatch-item').forEach(item => {
+      item.addEventListener('click', (event) => {
+        const priority = item.getAttribute('data-priority');
+        const next = vis.selectedPriorities.includes(priority)
+          ? vis.selectedPriorities.filter(x => x !== priority)
+          : [...vis.selectedPriorities, priority];
+        if (vis.config.onSliceSelect) {
+          vis.config.onSliceSelect(next);
+        }
+      });
+      
+      // Add hover effects
+      item.addEventListener('mouseover', () => {
+        item.style.opacity = '1';
+      });
+      item.addEventListener('mouseleave', () => {
+        const priority = item.getAttribute('data-priority');
+        const isSelected = vis.selectedPriorities.includes(priority);
+        item.style.opacity = isSelected ? '1' : '0.7';
+      });
+    });
+    
+    // Add clear button handler
+    const btn = container.querySelector('.chart-clear-btn');
+    if (btn) {
+      btn.addEventListener('mouseover', function() {
+        if (vis.selectedPriorities.length > 0) {
+          this.style.backgroundColor = '#000000';
+        }
+      });
+      btn.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#f28b82';
+      });
+      btn.addEventListener('click', function() {
+        if (vis.selectedPriorities.length > 0 && vis.config.onSliceSelect) {
+          vis.config.onSliceSelect([]);
+        }
+      });
+    }
   }
 
   updateData(data, selectedPriorities, colorBaseData) {

@@ -118,12 +118,35 @@ class BarChart {
     if (!container) return;
     const max = vis.colorScale.domain()[1];
     const stops = d3.range(11).map(i => d3.interpolateYlGnBu(i / 10));
+    const clearButtonStyle = vis.selectedValues.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
     container.innerHTML = `
-      <div class="legend-gradient-bar" style="background: linear-gradient(to right, ${stops.join(',')})"></div>
-      <div class="legend-gradient-labels">
-        <span>0 calls</span>
-        <span>${Math.round(max)} calls</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <div>
+          <div class="legend-gradient-bar" style="background: linear-gradient(to right, ${stops.join(',')})"></div>
+          <div class="legend-gradient-labels">
+            <span>0 calls</span>
+            <span>${Math.round(max)} calls</span>
+          </div>
+        </div>
+        <button class="chart-clear-btn" data-chart="bar-${Math.random()}" style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; ${clearButtonStyle}">Clear</button>
       </div>`;
+    
+    const btn = container.querySelector('.chart-clear-btn');
+    if (btn) {
+      btn.addEventListener('mouseover', function() {
+        if (vis.selectedValues.length > 0) {
+          this.style.backgroundColor = '#000000';
+        }
+      });
+      btn.addEventListener('mouseleave', function() {
+        this.style.backgroundColor = '#e74c3c';
+      });
+      btn.addEventListener('click', function() {
+        if (vis.selectedValues.length > 0 && vis.config.onBarSelect) {
+          vis.config.onBarSelect([]);
+        }
+      });
+    }
   }
 
   renderVis() {

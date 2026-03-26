@@ -73,9 +73,22 @@ function updateApp() {
   neighborhoodHeatmap.updateData(forHeatmap, globalState.selectedNeighborhoods, typeFilteredData);
   priorityPieChart.updateData(forPieChart, globalState.selectedPriorities, typeFilteredData);
 }
+// Performance tracking
+const appStartTime = performance.now();
+console.log('🚀 Application initialization started...');
+
 // d3.csv('data/311_full_preprocessed_data.csv')
+console.log('📂 Loading CSV data...');
+const csvLoadStart = performance.now();
+
 d3.csv('data/311_sample_preprocessed_data.csv')
   .then(data => {
+    const csvLoadEnd = performance.now();
+    console.log(`✅ CSV data loaded in ${(csvLoadEnd - csvLoadStart).toFixed(2)}ms`);
+
+    console.log('🔄 Processing data...');
+    const processingStart = performance.now();
+
     data.forEach(d => {
       d.latitude = d.LATITUDE.trim() === '' ? NaN : +d.LATITUDE;
       d.longitude = d.LONGITUDE.trim() === '' ? NaN : +d.LONGITUDE;
@@ -85,9 +98,14 @@ d3.csv('data/311_sample_preprocessed_data.csv')
     allData = data.filter(d => Number.isFinite(d.latitude) && Number.isFinite(d.longitude));
     const missingGpsCount = data.filter(d => d.MISSING_GPS === 'TRUE').length;
 
-    console.log('number of items: ' + allData.length);
-    console.log('number of missing items: ' + missingGpsCount);
+    const processingEnd = performance.now();
+    console.log(`✅ Data processing completed in ${(processingEnd - processingStart).toFixed(2)}ms`);
+    console.log('📊 Number of items: ' + allData.length);
+    console.log('⚠️ Number of missing GPS items: ' + missingGpsCount);
 
+    // Initialize Leaflet Map
+    console.log('🗺️ Loading Leaflet Map...');
+    const mapStart = performance.now();
     leafletMap = new LeafletMap({
       parentElement: '#my-map',
       onPointSelect: point => {
@@ -102,6 +120,8 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedPoint: null });
       }
     }, allData);
+    const mapEnd = performance.now();
+    console.log(`✅ Leaflet Map loaded in ${(mapEnd - mapStart).toFixed(2)}ms`);
 
     // Initialize city-wide grid heatmap overlay
     cityGridHeatmap = new CityGridHeatmap({
@@ -118,7 +138,12 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedNeighborhoods: neighborhoods, selectedPoint: null });
       }
     });
+    const heatmapEnd = performance.now();
+    console.log(`✅ Neighborhood Heatmap loaded in ${(heatmapEnd - heatmapStart).toFixed(2)}ms`);
 
+    // Initialize Priority Pie Chart
+    console.log('🥧 Loading Priority Pie Chart...');
+    const pieStart = performance.now();
     priorityPieChart = new PriorityPieChart({
       parentElement: '#chart-priority .chart-body',
       legendElement: '#chart-priority .chart-legend-container',
@@ -126,8 +151,12 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedPriorities: priorities, selectedPoint: null });
       }
     });
+    const pieEnd = performance.now();
+    console.log(`✅ Priority Pie Chart loaded in ${(pieEnd - pieStart).toFixed(2)}ms`);
 
     // Initialize Filter Panel
+    console.log('🎛️ Loading Filter Panel...');
+    const filterStart = performance.now();
     filterPanel = new FilterPanel(allData, missingGpsCount, {
       onFilterChange: (newFilters) => {
         setGlobalState(newFilters);
@@ -143,7 +172,12 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         });
       }
     });
+    const filterEnd = performance.now();
+    console.log(`✅ Filter Panel loaded in ${(filterEnd - filterStart).toFixed(2)}ms`);
 
+    // Initialize SR Type Bar Chart
+    console.log('📊 Loading SR Type Bar Chart...');
+    const srTypeStart = performance.now();
     srTypeChart = new BarChart({
       parentElement: '#chart-sr-type .chart-body',
       legendElement: '#chart-sr-type .chart-legend-container',
@@ -155,7 +189,12 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedSrTypes: srTypes, selectedPoint: null });
       }
     }, allData);
+    const srTypeEnd = performance.now();
+    console.log(`✅ SR Type Bar Chart loaded in ${(srTypeEnd - srTypeStart).toFixed(2)}ms`);
 
+    // Initialize Method Bar Chart
+    console.log('📊 Loading Method Received Bar Chart...');
+    const methodStart = performance.now();
     methodChart = new BarChart({
       parentElement: '#chart-method-received .chart-body',
       legendElement: '#chart-method-received .chart-legend-container',
@@ -168,7 +207,12 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedMethods: methods, selectedPoint: null });
       }
     }, allData);
+    const methodEnd = performance.now();
+    console.log(`✅ Method Received Bar Chart loaded in ${(methodEnd - methodStart).toFixed(2)}ms`);
 
+    // Initialize Agency Bar Chart
+    console.log('📊 Loading Agency Bar Chart...');
+    const deptStart = performance.now();
     deptChart = new BarChart({
       parentElement: '#chart-agency .chart-body',
       legendElement: '#chart-agency .chart-legend-container',
@@ -180,8 +224,24 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState({ selectedAgencies: agencies, selectedPoint: null });
       }
     }, allData);
+    const deptEnd = performance.now();
+    console.log(`✅ Agency Bar Chart loaded in ${(deptEnd - deptStart).toFixed(2)}ms`);
 
     // Run initial update to sync everything
+    console.log('🔄 Running initial app update...');
+    const updateStart = performance.now();
     updateApp();
+    const updateEnd = performance.now();
+    console.log(`✅ Initial app update completed in ${(updateEnd - updateStart).toFixed(2)}ms`);
+
+    // Total time
+    const appEndTime = performance.now();
+    const totalLoadTime = appEndTime - appStartTime;
+    console.log(`\n⏱️ ========== TOTAL LOAD TIME: ${totalLoadTime.toFixed(2)}ms ==========`);
+    console.log('🎉 Application fully initialized and ready!');
   })
-  .catch(error => console.error(error));
+  .catch(error => {
+    console.error('❌ Error loading application:', error);
+    const appErrorTime = performance.now();
+    console.log(`⏱️ Application failed after ${(appErrorTime - appStartTime).toFixed(2)}ms`);
+  });
