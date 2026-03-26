@@ -1,17 +1,28 @@
+const PRIORITY_COLORS = {
+  'STANDARD':  '#4e79a7',
+  'HAZARDOUS': '#f28e2b',
+  'PRIORITY':  '#e15759',
+};
+const PRIORITY_COLOR_DEFAULT = '#9aa5b1';
+
 class PriorityPieChart {
   constructor(_config) {
     this.config = {
       parentElement: _config.parentElement,
+      legendElement: _config.legendElement || null,
       onSliceSelect: _config.onSliceSelect || null
     };
 
-    this.selectedPriority = 'ALL';
+    this.selectedPriorities = [];
     this.data = [];
     this.tooltipOffset = 12;
     this.tooltip = d3.select('#tooltip');
-    this.colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
     this.initVis();
+  }
+
+  getColor(priority) {
+    return PRIORITY_COLORS[priority] || PRIORITY_COLOR_DEFAULT;
   }
 
   initVis() {
@@ -36,12 +47,28 @@ class PriorityPieChart {
     window.addEventListener('resize', () => {
       vis.renderVis();
     });
+
+    vis.renderLegend();
   }
 
-  updateData(data, selectedPriority) {
+  renderLegend() {
+    const vis = this;
+    if (!vis.config.legendElement) return;
+    const container = document.querySelector(vis.config.legendElement);
+    if (!container) return;
+    const labelMap = { 'STANDARD': 'Standard', 'HAZARDOUS': 'Hazardous', 'PRIORITY': 'Priority' };
+    const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => `
+      <div class="legend-swatch-item">
+        <span class="legend-swatch" style="background:${color}"></span>
+        <span class="legend-swatch-label">${labelMap[key] || key}</span>
+      </div>`).join('');
+    container.innerHTML = `<div class="legend-swatch-list" style="display:flex;gap:8px;flex-wrap:wrap;">${items}</div>`;
+  }
+
+  updateData(data, selectedPriorities, colorBaseData) {
     const vis = this;
 
-    vis.selectedPriority = selectedPriority || 'ALL';
+    vis.selectedPriorities = selectedPriorities || [];
 
     vis.data = d3.rollups(
       data,
@@ -80,8 +107,6 @@ class PriorityPieChart {
     vis.svg.attr('width', width).attr('height', height);
     vis.chartGroup.attr('transform', `translate(${width / 2}, ${height / 2})`);
 
-    vis.colorScale.domain(vis.data.map(d => d.priority));
-
     const pie = d3.pie()
       .sort(null)
       .value(d => d.count);
@@ -106,8 +131,9 @@ class PriorityPieChart {
     arcs
       .select('.priority-slice')
       .attr('d', arc)
-      .attr('fill', d => vis.colorScale(d.data.priority))
-      .classed('active', d => vis.selectedPriority === d.data.priority)
+      .attr('fill', d => vis.getColor(d.data.priority))
+      .attr('opacity', d => vis.selectedPriorities.length === 0 || vis.selectedPriorities.includes(d.data.priority) ? 1 : 0.2)
+      .classed('active', d => vis.selectedPriorities.includes(d.data.priority))
       .on('mouseover', function(event, d) {
         const pct = vis.totalCount > 0 ? ((d.data.count / vis.totalCount) * 100).toFixed(1) : '0.0';
         d3.select(this).classed('hovered', true);
@@ -127,9 +153,12 @@ class PriorityPieChart {
         vis.tooltip.style('opacity', 0);
       })
       .on('click', (_, d) => {
-        const nextPriority = vis.selectedPriority === d.data.priority ? 'ALL' : d.data.priority;
+        const p = d.data.priority;
+        const next = vis.selectedPriorities.includes(p)
+          ? vis.selectedPriorities.filter(x => x !== p)
+          : [...vis.selectedPriorities, p];
         if (vis.config.onSliceSelect) {
-          vis.config.onSliceSelect(nextPriority);
+          vis.config.onSliceSelect(next);
         }
       });
   }

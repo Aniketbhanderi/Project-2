@@ -3,6 +3,7 @@ let leafletMap;
 let filterPanel;
 let neighborhoodHeatmap;
 let priorityPieChart;
+let srTypeChart;
 let methodChart;
 let deptChart;
 let allData = [];
@@ -10,8 +11,11 @@ let allData = [];
 // Establish the Global State Object
 const globalState = {
   selectedType: 'ALL',
-  selectedNeighborhood: 'ALL',
-  selectedPriority: 'ALL',
+  selectedSrTypes: [],
+  selectedNeighborhoods: [],
+  selectedPriorities: [],
+  selectedAgencies: [],
+  selectedMethods: [],
   colorBy: 'timeGap',
   mapStyle: 'aerial',
   selectedPoint: null,
@@ -30,41 +34,39 @@ function updateApp() {
     ? allData
     : allData.filter(d => d.srType === globalState.selectedType);
 
-  const neighborhoodExists = globalState.selectedNeighborhood === 'ALL'
-    || typeFilteredData.some(d => (d.NEIGHBORHOOD || 'Unknown') === globalState.selectedNeighborhood);
+  // Helper: apply an array filter (empty array = no filter)
+  const applyFilter = (data, arr, accessor) =>
+    arr.length === 0 ? data : data.filter(d => arr.includes(accessor(d)));
 
-  const effectiveNeighborhood = neighborhoodExists ? globalState.selectedNeighborhood : 'ALL';
-  globalState.selectedNeighborhood = effectiveNeighborhood;
+  const getSrType = d => d.srType;
+  const getNeighborhood = d => d.NEIGHBORHOOD || 'Unknown';
+  const getPriority = d => d.PRIORITY || 'Unknown';
+  const getAgency = d => d.DEPT_NAME || 'Unknown';
+  const getMethod = d => d.METHOD_RECEIVED || 'Unknown';
 
-  const filteredData = effectiveNeighborhood === 'ALL'
-    ? typeFilteredData
-    : typeFilteredData.filter(d => (d.NEIGHBORHOOD || 'Unknown') === effectiveNeighborhood);
+  // Full cascade → map gets everything
+  const withSrType  = applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType);
+  const withNeighborhood = applyFilter(withSrType, globalState.selectedNeighborhoods, getNeighborhood);
+  const withPriority = applyFilter(withNeighborhood, globalState.selectedPriorities, getPriority);
+  const withAgency = applyFilter(withPriority, globalState.selectedAgencies, getAgency);
+  const finalFilteredData = applyFilter(withAgency, globalState.selectedMethods, getMethod);
 
-  const priorityExists = globalState.selectedPriority === 'ALL'
-    || filteredData.some(d => (d.PRIORITY || 'Unknown') === globalState.selectedPriority);
+  // Each chart sees all active filters EXCEPT its own dimension,
+  // so its elements stay visible (faded vs highlighted) rather than disappearing.
+  const forSrTypeBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedAgencies, getAgency), globalState.selectedMethods, getMethod);
+  const forHeatmap   = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedPriorities, getPriority), globalState.selectedAgencies, getAgency), globalState.selectedMethods, getMethod);
+  const forPieChart  = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedAgencies, getAgency), globalState.selectedMethods, getMethod);
+  const forAgencyBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedMethods, getMethod);
+  const forMethodBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedAgencies, getAgency);
 
-  const effectivePriority = priorityExists ? globalState.selectedPriority : 'ALL';
-  globalState.selectedPriority = effectivePriority;
+  leafletMap.updateState(globalState, finalFilteredData, typeFilteredData);
+  filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData, typeFilteredData);
 
-  const finalFilteredData = effectivePriority === 'ALL'
-    ? filteredData
-    : filteredData.filter(d => (d.PRIORITY || 'Unknown') === effectivePriority);
-
-  // Push all state to the map at once
-  leafletMap.updateState(globalState, finalFilteredData);
-
-  // Push state to the filter panel
-  filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData);
-
-  // Update bar charts with filtered data
-  methodChart.update(filteredData);
-  deptChart.update(filteredData);
-
-  // Keep neighborhood heatmap in sync with current request-type filter.
-  neighborhoodHeatmap.updateData(typeFilteredData, effectiveNeighborhood);
-
-  // Keep priority pie chart in sync with current request-type filter.
-  priorityPieChart.updateData(typeFilteredData, effectivePriority);
+  srTypeChart.update(forSrTypeBar, globalState.selectedSrTypes, typeFilteredData);
+  deptChart.update(forAgencyBar, globalState.selectedAgencies, typeFilteredData);
+  methodChart.update(forMethodBar, globalState.selectedMethods, typeFilteredData);
+  neighborhoodHeatmap.updateData(forHeatmap, globalState.selectedNeighborhoods, typeFilteredData);
+  priorityPieChart.updateData(forPieChart, globalState.selectedPriorities, typeFilteredData);
 }
 // d3.csv('data/311_full_preprocessed_data.csv')
 d3.csv('data/311_sample_preprocessed_data.csv')
@@ -98,15 +100,17 @@ d3.csv('data/311_sample_preprocessed_data.csv')
 
     neighborhoodHeatmap = new NeighborhoodHeatmap({
       parentElement: '#chart-neighborhood .chart-body',
-      onTileSelect: neighborhood => {
-        setGlobalState({ selectedNeighborhood: neighborhood, selectedPoint: null });
+      legendElement: '#chart-neighborhood .chart-legend-container',
+      onTileSelect: neighborhoods => {
+        setGlobalState({ selectedNeighborhoods: neighborhoods, selectedPoint: null });
       }
     });
 
     priorityPieChart = new PriorityPieChart({
       parentElement: '#chart-priority .chart-body',
-      onSliceSelect: priority => {
-        setGlobalState({ selectedPriority: priority, selectedPoint: null });
+      legendElement: '#chart-priority .chart-legend-container',
+      onSliceSelect: priorities => {
+        setGlobalState({ selectedPriorities: priorities, selectedPoint: null });
       }
     });
 
@@ -116,23 +120,52 @@ d3.csv('data/311_sample_preprocessed_data.csv')
         setGlobalState(newFilters);
       },
       onClearSelection: () => {
-        setGlobalState({ selectedPoint: null });
+        setGlobalState({
+          selectedSrTypes: [],
+          selectedNeighborhoods: [],
+          selectedPriorities: [],
+          selectedAgencies: [],
+          selectedMethods: [],
+          selectedPoint: null
+        });
       }
     });
 
+    srTypeChart = new BarChart({
+      parentElement: '#chart-sr-type .chart-body',
+      legendElement: '#chart-sr-type .chart-legend-container',
+      xKey: 'srType',
+      yKey: 'Requests',
+      scrollable: true,
+      label: 'Request Type',
+      onBarSelect: srTypes => {
+        setGlobalState({ selectedSrTypes: srTypes, selectedPoint: null });
+      }
+    }, allData);
+
     methodChart = new BarChart({
       parentElement: '#chart-method-received .chart-body',
+      legendElement: '#chart-method-received .chart-legend-container',
       xKey: 'METHOD_RECEIVED',
       yKey: 'Requests',
       scrollable: true,
-      margin: { top: 6, right: 32, bottom: 6, left: 52 }
+      margin: { top: 6, right: 32, bottom: 6, left: 52 },
+      label: 'Method',
+      onBarSelect: methods => {
+        setGlobalState({ selectedMethods: methods, selectedPoint: null });
+      }
     }, allData);
 
     deptChart = new BarChart({
       parentElement: '#chart-agency .chart-body',
+      legendElement: '#chart-agency .chart-legend-container',
       xKey: 'DEPT_NAME',
       yKey: 'Requests',
-      scrollable: true
+      scrollable: true,
+      label: 'Agency',
+      onBarSelect: agencies => {
+        setGlobalState({ selectedAgencies: agencies, selectedPoint: null });
+      }
     }, allData);
 
     // Run initial update to sync everything

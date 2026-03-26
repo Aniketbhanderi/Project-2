@@ -35,9 +35,9 @@
             <button id="map-style-toggle" class="map-style-toggle" type="button">Basemap: Aerial</button>
             <div id="filter-summary" class="filter-summary"></div>
             <div id="missing-gps" class="missing-gps-info"></div>
+            <button id="clear-selection" class="clear-selection-btn" type="button" style="display:none;">Clear Selection</button>
             <div class="selected-point-panel">
                 <div class="selected-point-title">Selected Data Point</div>
-                <button id="clear-selection" class="clear-selection-btn" type="button">Clear Selection</button>
                 <div id="selected-point-details" class="selected-point-details">Click a point on the map to view all fields.</div>
             </div>
         </div>
@@ -46,23 +46,28 @@
     <!-- Charts panel: right side, full height, 5 charts -->
     <div class="charts-panel">
         <div class="chart-card" id="chart-sr-type">
-            <div class="chart-title">Request Types</div>
+            <div class="chart-title">Top Service Request Types</div>
+            <div class="chart-legend-container"></div>
             <div class="chart-body"></div>
         </div>
         <div class="chart-card" id="chart-priority">
             <div class="chart-title">By Priority</div>
+            <div class="chart-legend-container"></div>
             <div class="chart-body"></div>
         </div>
         <div class="chart-card" id="chart-agency">
             <div class="chart-title">By Agency</div>
+            <div class="chart-legend-container"></div>
             <div class="chart-body"></div>
         </div>
         <div class="chart-card" id="chart-method-received">
             <div class="chart-title">By Method Received</div>
+            <div class="chart-legend-container"></div>
             <div class="chart-body"></div>
         </div>
         <div class="chart-card" id="chart-neighborhood">
             <div class="chart-title">By Neighborhood</div>
+            <div class="chart-legend-container"></div>
             <div class="chart-body"></div>
         </div>
     </div>
