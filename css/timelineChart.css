@@ -1,0 +1,58 @@
+/* Timeline panel styles */
+.timeline-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(209, 223, 237, 0.88);
+  border-radius: 10px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.14);
+
+  position: fixed;
+  bottom: 12px;
+  left: 55px;
+  right: calc(20px + clamp(220px, 24vw, 330px));
+  height: 150px;
+  z-index: 900;
+  padding: 8px 10px 6px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: all;
+  overflow: hidden;
+}
+
+#timeline {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+#timeline svg {
+  display: block;
+  min-width: 100%;
+  height: 100%;
+}
+
+#timeline .bar {
+  fill: #2c7fb8;
+}
+
+#timeline .bar:hover {
+  fill: #145a86;
+}
+
+#timeline .x-axis path,
+#timeline .x-axis line,
+#timeline .y-axis path,
+#timeline .y-axis line {
+  stroke: #7a90a6;
+  shape-rendering: crispEdges;
+}
+
+#timeline .x-axis text,
+#timeline .y-axis text {
+  fill: #2b3e50;
+  font-size: 10px;
+}

@@ -19,8 +19,7 @@ body {
 /* ── Shared glass-panel surface ──────────────────────────── */
 .header-panel,
 .toolbar-panel,
-.chart-card,
-.timeline-panel {
+.chart-card {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -70,20 +69,6 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-}
-
-/* ── Timeline panel: bottom center ───────────────────────── */
-.timeline-panel {
-  position: fixed;
-  bottom: 12px;
-  left: 55px;
-  right: calc(20px + clamp(220px, 24vw, 330px));
-  height: 150px;
-  z-index: 900;
-  padding: 8px 10px 6px;
-  display: flex;
-  flex-direction: column;
-  pointer-events: all;
 }
 
 /* ── Charts panel: right side, full height ───────────────── */
