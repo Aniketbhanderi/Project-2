@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive map with Leaflet</title>
+    <link rel="icon" href="data:;base64,iVBORwOKGO=" />
+    <link rel="stylesheet" href="css/leaflet.css">
+    <link rel="stylesheet" href="css/filterPanel.css">
+    <link rel="stylesheet" href="css/barChart.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/neighborhoodHeatmap.css">
+    <link rel="stylesheet" href="css/cityGridHeatmap.css">
+    <link rel="stylesheet" href="css/priorityPieChart.css">
+</head>
+<body>
+
+    <div id="my-map"></div>
+
+    <div class="left-column">
+        <div class="header-panel">
+            <h1>311 Service Calls</h1>
+            <p class="panel-description">Filter requests by service request type.</p>
+        </div>
+        <div class="toolbar-panel">
+            <label for="sr-type-selector" class="filter-label">Request Type</label>
+            <select id="sr-type-selector" class="filter-select"></select>
+            <label for="color-by-selector" class="filter-label">Color By</label>
+            <select id="color-by-selector" class="filter-select">
+                <option value="timeGap">Time from Request to Update</option>
+                <option value="neighborhood">Neighborhood</option>
+                <option value="priority">Priority</option>
+                <option value="agency">Public Agency</option>
+            </select>
+            <div id="color-legend" class="color-legend"></div>
+            <button id="map-style-toggle" class="map-style-toggle" type="button">Basemap: Aerial</button>
+            <button id="city-heatmap-toggle" class="map-style-toggle city-heatmap-toggle" type="button">City Heatmap: Off</button>
+            <div id="filter-summary" class="filter-summary"></div>
+            <div id="missing-gps" class="missing-gps-info"></div>
+            <button id="clear-selection" class="clear-selection-btn" type="button" style="display:none;">Clear Selection</button>
+            <div class="selected-point-panel">
+                <div class="selected-point-title">Selected Data Point</div>
+                <div id="selected-point-details" class="selected-point-details">Click a point on the map to view all fields.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-panel">
+        <div class="chart-card" id="chart-sr-type">
+            <div class="chart-title">Top Service Request Types</div>
+            <div class="chart-legend-container"></div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-priority">
+            <div class="chart-title">By Priority</div>
+            <div class="chart-legend-container"></div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-agency">
+            <div class="chart-title">By Agency</div>
+            <div class="chart-legend-container"></div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-method-received">
+            <div class="chart-title">By Method Received</div>
+            <div class="chart-legend-container"></div>
+            <div class="chart-body"></div>
+        </div>
+        <div class="chart-card" id="chart-neighborhood">
+            <div class="chart-title">By Neighborhood</div>
+            <div class="chart-legend-container"></div>
+            <div class="chart-body"></div>
+        </div>
+    </div>
+
+    <!-- ✅ FIX 1: id changed to "timeline" and kept INSIDE body -->
+    <div class="timeline-panel">
+        <div class="chart-title">Timeline</div>
+        <div class="chart-body" id="timeline"></div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="js/d3.v6.min.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/leafletMap.js"></script>
+    <script src="js/cityGridHeatmap.js"></script>
+    <script src="js/filterPanel.js"></script>
+    <script src="js/neighborhoodHeatmap.js"></script>
+    <script src="js/priorityPieChart.js"></script>
+    <script src="js/barChart.js"></script>
+    <script src="js/timeline.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>
