@@ -118,9 +118,13 @@ class TimelineChart {
     vis.dateField = dateField || 'dateReceived';
     vis.updateVis();
 
-    // Clear brush rectangle when the range is removed externally (e.g. Clear Selection)
+    // Sync the brush rectangle to match the current selectedDateRange
     if (!vis.selectedDateRange) {
       vis.brushG.call(vis.brush.move, null);
+    } else {
+      var x0 = Math.max(0, Math.min(vis.width, vis.xScale(vis.selectedDateRange[0])));
+      var x1 = Math.max(0, Math.min(vis.width, vis.xScale(vis.selectedDateRange[1])));
+      vis.brushG.call(vis.brush.move, [x0, x1]);
     }
   }
 
@@ -288,6 +292,7 @@ class TimelineChart {
 
   handleBrushMove(event) {
     const vis = this;
+    if (!event.sourceEvent) return;
     if (!event.selection) return;
 
     const [x0, x1] = event.selection;

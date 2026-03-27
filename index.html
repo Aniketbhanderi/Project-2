@@ -79,10 +79,14 @@
     <div class="timeline-panel">
         <div class="chart-title timeline-title-row">
             <span id="timeline-parameter-title">Timeline</span>
-            <select id="timeline-parameter-selector" class="timeline-parameter-selector">
-                <option value="dateReceived">DATE_RECEIVED</option>
-                <option value="dateResolved">DATE_RESOLVED</option>
-            </select>
+            <div class="timeline-controls">
+                <button id="timeline-animate-btn" class="timeline-animate-btn" type="button">&#9654; Play</button>
+                <button id="timeline-reset-btn" class="timeline-reset-btn" type="button">&#8634; Reset</button>
+                <select id="timeline-parameter-selector" class="timeline-parameter-selector">
+                    <option value="dateReceived">DATE_RECEIVED</option>
+                    <option value="dateResolved">DATE_RESOLVED</option>
+                </select>
+            </div>
         </div>
         <div class="chart-body" id="chart-timeline"></div>
     </div>

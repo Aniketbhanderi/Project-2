@@ -9,6 +9,96 @@ let methodChart;
 let deptChart;
 let allData = [];
 
+// ── Timeline animation state ───────────────────────────────
+let animationTimer = null;
+
+function showAnimationTooltip(startDate, endDate) {
+  var fmt = d3.timeFormat('%b %d, %Y');
+  var panel = document.querySelector('.timeline-panel');
+  if (!panel) return;
+  var rect = panel.getBoundingClientRect();
+
+  d3.select('#tooltip')
+    .style('opacity', 1)
+    .style('z-index', 1000000)
+    .html(
+      '<div class="tooltip-label timeline-tooltip">' +
+        '<strong>From:</strong> ' + fmt(startDate) + '<br>' +
+        '<strong>To:</strong> ' + fmt(endDate) +
+      '</div>'
+    )
+    .style('left', (rect.left + rect.width / 2 - 60) + 'px')
+    .style('top', (rect.top - 52) + 'px');
+}
+
+function startTimelineAnimation() {
+  var btn = document.querySelector('#timeline-animate-btn');
+  var field = globalState.timelineDateField;
+
+  var validDates = allData
+    .map(function(d) { return d[field]; })
+    .filter(function(d) { return d; });
+
+  if (validDates.length === 0) return;
+
+  var minDate = d3.min(validDates);
+  var maxDate = d3.max(validDates);
+  var windowMs = 15 * 86400000;
+  var currentStart = new Date(minDate.getTime());
+  var currentEnd = new Date(currentStart.getTime() + windowMs);
+
+  setGlobalState({ selectedDateRange: [currentStart, currentEnd], selectedPoint: null });
+  showAnimationTooltip(currentStart, currentEnd);
+
+  if (btn) {
+    btn.innerHTML = '&#9632; Stop';
+    btn.classList.add('playing');
+  }
+
+  animationTimer = setInterval(function() {
+    currentStart = new Date(currentStart.getTime() + windowMs);
+    currentEnd = new Date(currentStart.getTime() + windowMs);
+
+    if (currentStart > maxDate) {
+      stopTimelineAnimation();
+      return;
+    }
+
+    setGlobalState({ selectedDateRange: [currentStart, currentEnd], selectedPoint: null });
+    showAnimationTooltip(currentStart, currentEnd);
+  }, 1200);
+}
+
+function stopTimelineAnimation() {
+  if (animationTimer) {
+    clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  // Keep the current selection so user can resize it with the brush handles
+  var btn = document.querySelector('#timeline-animate-btn');
+  if (btn) {
+    btn.innerHTML = '&#9654; Play';
+    btn.classList.remove('playing');
+  }
+}
+
+function resetTimelineAnimation() {
+  if (animationTimer) {
+    clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  setGlobalState({ selectedDateRange: null, selectedPoint: null });
+  d3.select('#tooltip').style('opacity', 0);
+
+  var btn = document.querySelector('#timeline-animate-btn');
+  if (btn) {
+    btn.innerHTML = '&#9654; Play';
+    btn.classList.remove('playing');
+  }
+}
+
 // Establish the Global State Object
 const globalState = {
   selectedType: 'ALL',
@@ -217,11 +307,28 @@ d3.csv('data/311_sampled_5000.csv')
     const timelineParameterSelector = document.querySelector('#timeline-parameter-selector');
     if (timelineParameterSelector) {
       timelineParameterSelector.addEventListener('change', (event) => {
+        if (animationTimer) stopTimelineAnimation();
         setGlobalState({
           timelineDateField: event.target.value,
           selectedDateRange: null,
           selectedPoint: null
         });
+      });
+    }
+    var animateBtn = document.querySelector('#timeline-animate-btn');
+    if (animateBtn) {
+      animateBtn.addEventListener('click', function() {
+        if (animationTimer) {
+          stopTimelineAnimation();
+        } else {
+          startTimelineAnimation();
+        }
+      });
+    }
+    var resetBtn = document.querySelector('#timeline-reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function() {
+        resetTimelineAnimation();
       });
     }
     const timelineEnd = performance.now();

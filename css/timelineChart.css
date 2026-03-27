@@ -11,6 +11,12 @@
   gap: 8px;
 }
 
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .timeline-parameter-selector {
   font-size: 10px;
   font-weight: 600;
@@ -19,6 +25,48 @@
   border-radius: 4px;
   background: #ffffff;
   padding: 2px 6px;
+}
+
+.timeline-animate-btn {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1a4731;
+  background: #c6f6d5;
+  border: 1px solid #9ae6b4;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.timeline-animate-btn:hover {
+  background: #9ae6b4;
+}
+
+.timeline-animate-btn.playing {
+  color: #742a2a;
+  background: #fed7d7;
+  border-color: #feb2b2;
+}
+
+.timeline-animate-btn.playing:hover {
+  background: #feb2b2;
+}
+
+.timeline-reset-btn {
+  font-size: 10px;
+  font-weight: 700;
+  color: #44337a;
+  background: #e9d8fd;
+  border: 1px solid #d6bcfa;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.timeline-reset-btn:hover {
+  background: #d6bcfa;
 }
 
 /* Bars */
