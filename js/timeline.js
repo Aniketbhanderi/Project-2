@@ -28,6 +28,19 @@ class Timeline {
 
     vis.barsGroup = vis.chart.append("g").attr("class", "bars-group");
 
+    vis.yAxisLabel = vis.chart
+      .append("text")
+      .attr("class", "y-axis-label")
+      .attr("text-anchor", "middle")
+      .attr("transform", "rotate(-90)")
+      .text("No. of Calls");
+
+    vis.xAxisLabel = vis.chart
+      .append("text")
+      .attr("class", "x-axis-label")
+      .attr("text-anchor", "middle")
+      .text("Days of Jan 2025");
+
     vis.xScale = d3.scaleTime();
     vis.yScale = d3.scaleLinear();
 
@@ -81,6 +94,14 @@ class Timeline {
     vis.yScale.range([vis.height, 0]);
 
     vis.xAxisGroup.attr("transform", `translate(0, ${vis.height})`);
+
+    vis.yAxisLabel
+      .attr("x", -vis.height / 2)
+      .attr("y", -38);
+
+    vis.xAxisLabel
+      .attr("x", vis.plotWidth / 2)
+      .attr("y", vis.height + 38);
   }
 
   clearVis() {
@@ -106,31 +127,34 @@ class Timeline {
       d.date = rawDate ? parseDate(rawDate) : null;
     });
 
-    const validRows = vis.data.filter(d => d.date instanceof Date && !Number.isNaN(d.date.getTime()));
-    if (validRows.length === 0) return [];
+    const januaryStart = new Date(2025, 0, 1);
+    const februaryStart = new Date(2025, 1, 1);
+
+    const janRows = vis.data.filter(d => (
+      d.date instanceof Date
+      && !Number.isNaN(d.date.getTime())
+      && d.date >= januaryStart
+      && d.date < februaryStart
+    ));
 
     const grouped = d3.rollups(
-      validRows,
+      janRows,
       v => v.length,
-      d => d3.timeMonth.floor(d.date)
+      d => d3.timeDay.floor(d.date)
     ).sort((a, b) => a[0] - b[0]);
 
-    if (grouped.length === 0) return [];
+    const dayCountMap = new Map(grouped.map(d => [d[0].getTime(), d[1]]));
 
-    const monthCountMap = new Map(grouped.map(d => [d[0].getTime(), d[1]]));
-    const firstMonth = grouped[0][0];
-    const lastMonthExclusive = d3.timeMonth.offset(grouped[grouped.length - 1][0], 1);
-
-    return d3.timeMonths(firstMonth, lastMonthExclusive).map(month => ({
-      date: month,
-      count: monthCountMap.get(month.getTime()) || 0
+    return d3.timeDays(januaryStart, februaryStart).map(day => ({
+      date: day,
+      count: dayCountMap.get(day.getTime()) || 0
     }));
   }
 
   computePlotWidth() {
     let vis = this;
 
-    const minBarSlot = 34;
+    const minBarSlot = 22;
     const neededWidth = vis.displayData.length * minBarSlot;
     vis.plotWidth = Math.max(vis.minPlotWidth, neededWidth);
 
@@ -144,10 +168,10 @@ class Timeline {
   updateScales() {
     let vis = this;
 
-    const monthStart = vis.displayData[0].date;
-    const monthEndExclusive = d3.timeMonth.offset(vis.displayData[vis.displayData.length - 1].date, 1);
+    const januaryStart = new Date(2025, 0, 1);
+    const februaryStart = new Date(2025, 1, 1);
 
-    vis.xScale.domain([monthStart, monthEndExclusive]);
+    vis.xScale.domain([januaryStart, februaryStart]);
     vis.yScale.domain([0, d3.max(vis.displayData, d => d.count) || 1]).nice();
 
     vis.barWidth = Math.max(
@@ -161,8 +185,10 @@ class Timeline {
     );
 
     vis.xAxis
-      .ticks(Math.min(10, vis.displayData.length))
-      .tickFormat(d3.timeFormat("%b %Y"));
+      .ticks(d3.timeDay.every(1))
+      .tickFormat(d3.timeFormat("%d"));
+
+    vis.xAxisLabel.attr("x", vis.plotWidth / 2);
   }
 
   updateData(newData) {
