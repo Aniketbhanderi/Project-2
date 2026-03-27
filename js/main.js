@@ -3,6 +3,7 @@ let filterPanel;
 let neighborhoodHeatmap;
 let cityGridHeatmap;
 let priorityPieChart;
+let timelineChart;
 let srTypeChart;
 let methodChart;
 let deptChart;
@@ -19,6 +20,8 @@ const globalState = {
   colorBy: 'timeGap',
   mapStyle: 'aerial',
   showCityHeatmap: false,
+  timelineDateField: 'dateReceived',
+  selectedDateRange: null,
   selectedPoint: null,
   brushedPoints: [] // Placeholder for future brushing
 };
@@ -44,6 +47,7 @@ function updateApp() {
   const getPriority = d => d.PRIORITY || 'Unknown';
   const getAgency = d => d.DEPT_NAME || 'Unknown';
   const getMethod = d => d.METHOD_RECEIVED || 'Unknown';
+  const getTimelineDate = d => d[globalState.timelineDateField];
 
   // Full cascade → map gets everything
   const withSrType  = applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType);
@@ -60,20 +64,39 @@ function updateApp() {
   const forAgencyBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedMethods, getMethod);
   const forMethodBar = applyFilter(applyFilter(applyFilter(applyFilter(typeFilteredData, globalState.selectedSrTypes, getSrType), globalState.selectedNeighborhoods, getNeighborhood), globalState.selectedPriorities, getPriority), globalState.selectedAgencies, getAgency);
 
-  leafletMap.updateState(globalState, finalFilteredData, typeFilteredData);
-  if (cityGridHeatmap) {
-    cityGridHeatmap.updateData(finalFilteredData, globalState.showCityHeatmap);
+  // Date range filter helper — returns data unchanged when no range is selected
+  const applyDateRange = (data) => {
+    if (!globalState.selectedDateRange) return data;
+    const [start, end] = globalState.selectedDateRange;
+    return data.filter(d => getTimelineDate(d) && getTimelineDate(d) >= start && getTimelineDate(d) <= end);
+  };
+
+  // Timeline sees every filter EXCEPT date range (so the full date distribution stays visible)
+  if (timelineChart) {
+    timelineChart.update(finalFilteredData, globalState.selectedDateRange, globalState.timelineDateField);
   }
-  filterPanel.updateUI(globalState, finalFilteredData.length, allData.length, finalFilteredData, typeFilteredData);
+  const timelineSelectorEl = document.querySelector('#timeline-parameter-selector');
+  if (timelineSelectorEl) {
+    timelineSelectorEl.value = globalState.timelineDateField;
+  }
+
+  // All other views receive date-range-filtered data
+  const dateFiltered = applyDateRange(finalFilteredData);
+
+  leafletMap.updateState(globalState, dateFiltered, typeFilteredData);
+  if (cityGridHeatmap) {
+    cityGridHeatmap.updateData(dateFiltered, globalState.showCityHeatmap);
+  }
+  filterPanel.updateUI(globalState, dateFiltered.length, allData.length, dateFiltered, typeFilteredData);
 
   // When a map brush is active, charts show only the brushed subset so all views stay in sync
   const brushData = globalState.brushedPoints.length > 0 ? globalState.brushedPoints : null;
 
-  srTypeChart.update(brushData || forSrTypeBar, globalState.selectedSrTypes, typeFilteredData);
-  deptChart.update(brushData || forAgencyBar, globalState.selectedAgencies, typeFilteredData);
-  methodChart.update(brushData || forMethodBar, globalState.selectedMethods, typeFilteredData);
-  neighborhoodHeatmap.updateData(brushData || forHeatmap, globalState.selectedNeighborhoods, typeFilteredData);
-  priorityPieChart.updateData(brushData || forPieChart, globalState.selectedPriorities, typeFilteredData);
+  srTypeChart.update(brushData || applyDateRange(forSrTypeBar), globalState.selectedSrTypes, typeFilteredData);
+  deptChart.update(brushData || applyDateRange(forAgencyBar), globalState.selectedAgencies, typeFilteredData);
+  methodChart.update(brushData || applyDateRange(forMethodBar), globalState.selectedMethods, typeFilteredData);
+  neighborhoodHeatmap.updateData(brushData || applyDateRange(forHeatmap), globalState.selectedNeighborhoods, typeFilteredData);
+  priorityPieChart.updateData(brushData || applyDateRange(forPieChart), globalState.selectedPriorities, typeFilteredData);
 }
 // Performance tracking
 const appStartTime = performance.now();
@@ -91,10 +114,14 @@ d3.csv('data/311_sampled_5000.csv')
     console.log('🔄 Processing data...');
     const processingStart = performance.now();
 
+    const parseDateCreated = d3.timeParse('%Y-%m-%d');
+    const parseDateClosed = d3.timeParse('%m/%d/%y');
     data.forEach(d => {
       d.latitude = d.LATITUDE.trim() === '' ? NaN : +d.LATITUDE;
       d.longitude = d.LONGITUDE.trim() === '' ? NaN : +d.LONGITUDE;
       d.srType = d.SR_TYPE || 'Unknown';
+      d.dateReceived = parseDateCreated(d.DATE_CREATED) || null;
+      d.dateResolved = parseDateClosed(d.DATE_CLOSED) || null;
     });
 
     allData = data.filter(d => Number.isFinite(d.latitude) && Number.isFinite(d.longitude));
@@ -178,6 +205,28 @@ d3.csv('data/311_sampled_5000.csv')
     const pieEnd = performance.now();
     console.log(`✅ Priority Pie Chart loaded in ${(pieEnd - pieStart).toFixed(2)}ms`);
 
+    // Initialize Timeline Chart
+    console.log('📈 Loading Timeline Chart...');
+    const timelineStart = performance.now();
+    timelineChart = new TimelineChart({
+      parentElement: '#chart-timeline',
+      onBrushSelect: (dateRange) => {
+        setGlobalState({ selectedDateRange: dateRange, selectedPoint: null });
+      }
+    });
+    const timelineParameterSelector = document.querySelector('#timeline-parameter-selector');
+    if (timelineParameterSelector) {
+      timelineParameterSelector.addEventListener('change', (event) => {
+        setGlobalState({
+          timelineDateField: event.target.value,
+          selectedDateRange: null,
+          selectedPoint: null
+        });
+      });
+    }
+    const timelineEnd = performance.now();
+    console.log(`✅ Timeline Chart loaded in ${(timelineEnd - timelineStart).toFixed(2)}ms`);
+
     // Initialize Filter Panel
     console.log('🎛️ Loading Filter Panel...');
     const filterStart = performance.now();
@@ -192,6 +241,7 @@ d3.csv('data/311_sampled_5000.csv')
           selectedPriorities: [],
           selectedAgencies: [],
           selectedMethods: [],
+          selectedDateRange: null,
           selectedPoint: null
         });
       }

@@ -66,11 +66,19 @@ class PriorityPieChart {
         </div>`;
     }).join('');
     
-    const clearButtonStyle = vis.selectedPriorities.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
+    let clearButtonStyle = '';
+    let clearButtonColor = '';
+    if (vis.selectedPriorities.length > 0) {
+      clearButtonStyle = 'opacity: 1; cursor: pointer;';
+      clearButtonColor = '#d93a2f';
+    } else {
+      clearButtonStyle = 'opacity: 0.4; cursor: not-allowed;';
+      clearButtonColor = '#f28b82';
+    }
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
         <div class="legend-swatch-list" style="display:flex;gap:8px;flex-wrap:wrap;">${items}</div>
-        <button class="chart-clear-btn" data-chart="pie-${Math.random()}" style="background-color: #f28b82; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap; ${clearButtonStyle}">Clear</button>
+        <button class="chart-clear-btn" data-chart="pie-${Math.random()}" style="background-color: ${clearButtonColor}; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap; ${clearButtonStyle}">Clear</button>
       </div>`;
     
     // Add click handlers to legend items
@@ -102,10 +110,16 @@ class PriorityPieChart {
       btn.addEventListener('mouseover', function() {
         if (vis.selectedPriorities.length > 0) {
           this.style.backgroundColor = '#000000';
+        } else {
+          this.style.backgroundColor = '#f28b82';
         }
       });
       btn.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = '#f28b82';
+        if (vis.selectedPriorities.length > 0) {
+          this.style.backgroundColor = '#d93a2f';
+        } else {
+          this.style.backgroundColor = '#f28b82';
+        }
       });
       btn.addEventListener('click', function() {
         if (vis.selectedPriorities.length > 0 && vis.config.onSliceSelect) {
@@ -132,6 +146,7 @@ class PriorityPieChart {
       .sort((a, b) => d3.descending(a.count, b.count) || d3.ascending(a.priority));
 
     vis.totalCount = d3.sum(vis.data, d => d.count);
+    vis.renderLegend();
     vis.renderVis();
   }
 

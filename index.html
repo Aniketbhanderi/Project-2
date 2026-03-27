@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Interactive map with Leaflet</title>
+    <title>Who you gonna call? 3-1-1!</title>
     <link rel="icon" href="data:;base64,iVBORwOKGO=" />
     <link rel="stylesheet" href="css/leaflet.css">
     <link rel="stylesheet" href="css/filterPanel.css">
@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/neighborhoodHeatmap.css">
     <link rel="stylesheet" href="css/cityGridHeatmap.css">
     <link rel="stylesheet" href="css/priorityPieChart.css">
+    <link rel="stylesheet" href="css/timelineChart.css">
 </head>
 <body>
 
@@ -76,7 +77,13 @@
 
     <!-- Timeline panel: bottom center, spans between left side and charts panel -->
     <div class="timeline-panel">
-        <div class="chart-title">Timeline</div>
+        <div class="chart-title timeline-title-row">
+            <span id="timeline-parameter-title">Timeline</span>
+            <select id="timeline-parameter-selector" class="timeline-parameter-selector">
+                <option value="dateReceived">DATE_RECEIVED</option>
+                <option value="dateResolved">DATE_RESOLVED</option>
+            </select>
+        </div>
         <div class="chart-body" id="chart-timeline"></div>
     </div>
 
@@ -90,6 +97,7 @@
     <script src="js/neighborhoodHeatmap.js"></script>
     <script src="js/priorityPieChart.js"></script>
     <script src="js/barChart.js"></script>
+    <script src="js/timelineChart.js"></script>
     <script src="js/main.js"></script>
 
 </body>

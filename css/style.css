@@ -33,7 +33,7 @@ body {
 .left-column {
   position: fixed;
   top: 12px;
-  left: 55px;       /* clear Leaflet zoom controls (~34 px wide) */
+  left: 16px;       /* clear Leaflet zoom controls (~34 px wide) */
   bottom: auto;
   max-height: calc(100vh - 162px); /* 12px top + 130px timeline + 8px gap + 12px bottom */
   width: clamp(200px, 20vw, 270px);
@@ -72,11 +72,16 @@ body {
   overflow-y: auto;
 }
 
+/* Move Leaflet zoom controls to right of left panel */
+.leaflet-top.leaflet-left {
+  left: calc(55px + clamp(200px, 20vw, 270px) + 4px);
+}
+
 /* ── Timeline panel: bottom center ───────────────────────── */
 .timeline-panel {
   position: fixed;
   bottom: 12px;
-  left: 55px;
+  left: 16px;
   right: calc(20px + clamp(220px, 24vw, 330px));
   height: 150px;
   z-index: 900;
@@ -169,6 +174,9 @@ body {
   .left-column {
     left: 12px;
     width: clamp(180px, 42vw, 240px);
+  }
+  .leaflet-top.leaflet-left {
+    left: calc(12px + clamp(180px, 42vw, 240px) + 4px);
   }
   .charts-panel {
     width: clamp(180px, 38vw, 260px);

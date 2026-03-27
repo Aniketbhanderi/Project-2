@@ -164,7 +164,8 @@ class FilterPanel {
       || (globalState.selectedNeighborhoods || []).length > 0
       || (globalState.selectedPriorities || []).length > 0
       || (globalState.selectedAgencies || []).length > 0
-      || (globalState.selectedMethods || []).length > 0;
+      || (globalState.selectedMethods || []).length > 0
+      || globalState.selectedDateRange !== null;
     this.clearSelectionButton.style.display = hasAnySelection ? 'block' : 'none';
 
     // 6. Update Selected Point Panel
