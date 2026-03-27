@@ -79,11 +79,11 @@ function updateApp() {
 const appStartTime = performance.now();
 console.log('🚀 Application initialization started...');
 
-// d3.csv('data/311_full_preprocessed_data.csv')
 console.log('📂 Loading CSV data...');
 const csvLoadStart = performance.now();
 
-d3.csv('data/311_sample_preprocessed_data.csv')
+//d3.csv('data/311_sample_preprocessed_data.csv')
+d3.csv('data/311_sampled_5000.csv')
   .then(data => {
     const csvLoadEnd = performance.now();
     console.log(`✅ CSV data loaded in ${(csvLoadEnd - csvLoadStart).toFixed(2)}ms`);
