@@ -85,7 +85,10 @@ class CityGridHeatmap {
     const { minLat, minLng } = this.bounds;
     const { cells, latStep, lngStep } = prepared;
     const maxCount = d3.max(cells) || 1;
-    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxCount]);
+
+    // sqrt normalization so dense grid cells don't dominate the color range.
+    const sqrtNorm = d3.scaleSqrt().domain([0, maxCount]).range([0, 1]).clamp(true);
+    const colorScale = count => d3.interpolateYlGnBu(sqrtNorm(count));
 
     this.gridLayer.clearLayers();
     this.labelLayer.clearLayers();

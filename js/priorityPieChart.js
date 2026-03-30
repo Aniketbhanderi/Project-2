@@ -22,7 +22,8 @@ class PriorityPieChart {
   }
 
   getColor(priority) {
-    return PRIORITY_COLORS[priority] || PRIORITY_COLOR_DEFAULT;
+    const override = ((globalState.colorOverrides || {}).priority || {})[priority];
+    return override || PRIORITY_COLORS[priority] || PRIORITY_COLOR_DEFAULT;
   }
 
   initVis() {
@@ -57,33 +58,38 @@ class PriorityPieChart {
     const container = document.querySelector(vis.config.legendElement);
     if (!container) return;
     const labelMap = { 'STANDARD': 'Standard', 'HAZARDOUS': 'Hazardous', 'PRIORITY': 'Priority' };
-    const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => {
+    const items = Object.entries(PRIORITY_COLORS).map(([key]) => {
+      const hex = d3.color(vis.getColor(key))?.formatHex() || '#cccccc';
       const isSelected = vis.selectedPriorities.includes(key);
+      const border = isSelected ? '2px solid #333' : '2px solid transparent';
       return `
         <div class="legend-swatch-item" data-priority="${key}" style="cursor:pointer;opacity:${isSelected ? 1 : 0.7};transition:opacity 0.2s;">
-          <span class="legend-swatch" style="background:${color};border:${isSelected ? '2px solid #333' : '2px solid transparent'};transition:border 0.2s;"></span>
+          <input type="color" class="legend-color-picker" value="${hex}" data-category="${key}" title="Customize color" style="border:${border};transition:border 0.2s;">
           <span class="legend-swatch-label">${labelMap[key] || key}</span>
         </div>`;
     }).join('');
     
-    let clearButtonStyle = '';
-    let clearButtonColor = '';
-    if (vis.selectedPriorities.length > 0) {
-      clearButtonStyle = 'opacity: 1; cursor: pointer;';
-      clearButtonColor = '#d93a2f';
-    } else {
-      clearButtonStyle = 'opacity: 0.4; cursor: not-allowed;';
-      clearButtonColor = '#f28b82';
-    }
+    const clearButtonStyle = vis.selectedPriorities.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
         <div class="legend-swatch-list" style="display:flex;gap:8px;flex-wrap:wrap;">${items}</div>
-        <button class="chart-clear-btn" data-chart="pie-${Math.random()}" style="background-color: ${clearButtonColor}; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; white-space: nowrap; ${clearButtonStyle}">Clear</button>
+        <button class="chart-clear-btn" style="${clearButtonStyle}">Clear</button>
       </div>`;
     
-    // Add click handlers to legend items
+    // Color picker change handlers
+    container.querySelectorAll('.legend-color-picker').forEach(input => {
+      input.addEventListener('change', e => {
+        const cat = e.target.getAttribute('data-category');
+        const overrides = { ...(globalState.colorOverrides || {}) };
+        overrides.priority = { ...(overrides.priority || {}), [cat]: e.target.value };
+        setGlobalState({ colorOverrides: overrides });
+      });
+    });
+
+    // Add click handlers to legend items (skip when color picker is the target)
     container.querySelectorAll('.legend-swatch-item').forEach(item => {
       item.addEventListener('click', (event) => {
+        if (event.target.classList.contains('legend-color-picker')) return;
         const priority = item.getAttribute('data-priority');
         const next = vis.selectedPriorities.includes(priority)
           ? vis.selectedPriorities.filter(x => x !== priority)
@@ -108,18 +114,10 @@ class PriorityPieChart {
     const btn = container.querySelector('.chart-clear-btn');
     if (btn) {
       btn.addEventListener('mouseover', function() {
-        if (vis.selectedPriorities.length > 0) {
-          this.style.backgroundColor = '#000000';
-        } else {
-          this.style.backgroundColor = '#f28b82';
-        }
+        if (vis.selectedPriorities.length > 0) this.style.backgroundColor = '#7f1d1d';
       });
       btn.addEventListener('mouseleave', function() {
-        if (vis.selectedPriorities.length > 0) {
-          this.style.backgroundColor = '#d93a2f';
-        } else {
-          this.style.backgroundColor = '#f28b82';
-        }
+        this.style.backgroundColor = '';
       });
       btn.addEventListener('click', function() {
         if (vis.selectedPriorities.length > 0 && vis.config.onSliceSelect) {

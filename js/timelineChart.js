@@ -9,7 +9,7 @@ class TimelineChart {
     this.config = {
       parentElement: _config.parentElement,
       onBrushSelect: _config.onBrushSelect || null,
-      margin: { top: 8, right: 16, bottom: 24, left: 28 }
+      margin: { top: 8, right: 16, bottom: 24, left: 40 }
     };
 
     this.data = [];
@@ -48,7 +48,7 @@ class TimelineChart {
 
     // Scales
     vis.xScale = d3.scaleTime().range([0, vis.width]);
-    vis.yScale = d3.scaleLog().base(4).range([vis.height, 0]);
+    vis.yScale = d3.scaleLinear().range([vis.height, 0]);
 
     // Axis groups
     vis.xAxisG = vis.chart.append('g')
@@ -57,6 +57,13 @@ class TimelineChart {
 
     vis.yAxisG = vis.chart.append('g')
       .attr('class', 'timeline-y-axis');
+
+    // Y-axis label
+    vis.yLabel = vis.chart.append('text')
+      .attr('class', 'timeline-y-label')
+      .attr('transform', `translate(${-m.left + 11}, ${vis.height / 2}) rotate(-90)`)
+      .attr('text-anchor', 'middle')
+      .text('Calls');
 
     // Bar group (drawn below brush so brush overlay stays interactive)
     vis.barsG = vis.chart.append('g')
@@ -78,6 +85,35 @@ class TimelineChart {
     vis.brushG = vis.chart.append('g')
       .attr('class', 'timeline-brush')
       .call(vis.brush);
+
+    // The brush overlay intercepts all pointer events, so bar mouseover handlers never fire.
+    // Instead, listen on the brush group itself to show a bar tooltip on hover.
+    vis.brushG
+      .on('mousemove.bartooltip', function (event) {
+        if (event.buttons !== 0) return;  // skip while dragging (brush handles it)
+        if (!vis.aggregated || vis.aggregated.length === 0) return;
+
+        const [mx] = d3.pointer(event, vis.chart.node());
+        const closest = vis.aggregated.reduce((best, d) =>
+          Math.abs(vis.xScale(d.date) - mx) < Math.abs(vis.xScale(best.date) - mx) ? d : best
+        );
+
+        const bw = (vis.barWidth || 10) / 2 + 4;
+        if (Math.abs(vis.xScale(closest.date) - mx) > bw) {
+          vis.tooltip.style('opacity', 0);
+          return;
+        }
+
+        const fmt = d => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+        vis.tooltip
+          .style('opacity', 1)
+          .style('z-index', 1000000)
+          .html(`<div class="tooltip-label timeline-tooltip"><strong>${fmt(closest.date)}</strong><br>Calls: <strong>${closest.count}</strong></div>`);
+        vis.positionTooltip(event);
+      })
+      .on('mouseleave.bartooltip', function () {
+        vis.tooltip.style('opacity', 0);
+      });
 
     // Resize listener
     window.addEventListener('resize', () => vis.handleResize());
@@ -102,6 +138,10 @@ class TimelineChart {
 
     vis.brush.extent([[0, 0], [vis.width, vis.height]]);
     vis.brushG.call(vis.brush);
+
+    if (vis.yLabel) {
+      vis.yLabel.attr('transform', `translate(${-m.left + 11}, ${vis.height / 2}) rotate(-90)`);
+    }
 
     if (vis.aggregated.length > 0) {
       vis.renderVis();
@@ -156,7 +196,7 @@ class TimelineChart {
     // X domain: pad by one day on each side so edge bars aren't clipped
     if (vis.aggregated.length === 0) {
       vis.xScale.domain([new Date(), new Date()]);
-      vis.yScale.domain([1, 4]);
+      vis.yScale.domain([0, 1]);
     } else {
       const dateExtent = d3.extent(vis.aggregated, d => d.date);
       const dayMs = 86400000;
@@ -164,7 +204,7 @@ class TimelineChart {
         new Date(dateExtent[0].getTime() - dayMs),
         new Date(dateExtent[1].getTime() + dayMs)
       ]);
-      vis.yScale.domain([1, Math.max(4, d3.max(vis.aggregated, d => d.count))]).nice();
+      vis.yScale.domain([0, d3.max(vis.aggregated, d => d.count) || 1]).nice();
     }
 
     vis.renderVis();
@@ -181,6 +221,7 @@ class TimelineChart {
     const barWidth = numBars > 1
       ? Math.max(2, Math.min(30, (vis.width / numBars) * 0.75))
       : 20;
+    vis.barWidth = barWidth; // stored for hover tooltip detection
 
     // Helper: is a bar inside the brushed range?
     const isInRange = (d) => {
@@ -253,8 +294,8 @@ class TimelineChart {
     // ─── X Axis ───
     vis.xAxisG.call(
       d3.axisBottom(vis.xScale)
-        .ticks(Math.max(3, Math.floor(vis.width / 80)))
-        .tickFormat(d3.timeFormat('%b %d'))
+        .ticks(Math.max(3, Math.floor(vis.width / 65)))
+        .tickFormat(d => `${d.getMonth() + 1}/${d.getDate()}`)
         .tickSizeOuter(0)
     );
 
@@ -298,15 +339,19 @@ class TimelineChart {
     const [x0, x1] = event.selection;
     const startDate = vis.xScale.invert(x0);
     const endDate = vis.xScale.invert(x1);
-    const fmt = d3.timeFormat('%Y-%m-%d');
+    const fmt = d => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+
+    const totalCalls = vis.aggregated
+      .filter(d => d.date >= startDate && d.date <= endDate)
+      .reduce((sum, d) => sum + d.count, 0);
 
     vis.tooltip
       .style('opacity', 1)
       .style('z-index', 1000000)
       .html(
         '<div class="tooltip-label timeline-tooltip">' +
-          '<strong>Selected From:</strong> ' + fmt(startDate) + '<br>' +
-          '<strong>Selected To:</strong> ' + fmt(endDate) +
+          '<strong>' + fmt(startDate) + ' – ' + fmt(endDate) + '</strong><br>' +
+          'Calls in range: <strong>' + totalCalls + '</strong>' +
         '</div>'
       )
       .style('left', ((event.sourceEvent && event.sourceEvent.pageX) ? event.sourceEvent.pageX : 16) + 'px')

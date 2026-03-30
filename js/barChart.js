@@ -16,7 +16,7 @@ class BarChart {
     this.data = _data;
     this.colorBaseData = _data;
     this.selectedValues = [];
-    this.colorScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
+    this.colorScale = Object.assign(count => d3.interpolateYlGnBu(0.3 + 0.7 * count), { domain: () => [0, 1] });
     this.tooltip = d3.select('#tooltip');
     this.tooltipOffset = 12;
     this.initVis();
@@ -105,7 +105,12 @@ class BarChart {
     // Compute sequential color scale from base data so colors stay stable during cross-filtering
     const baseCounts = d3.rollup(vis.colorBaseData, v => v.length, d => d[vis.config.xKey]);
     const maxBaseCount = d3.max(Array.from(baseCounts.values())) || 1;
-    vis.colorScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, maxBaseCount]);
+    // Sqrt-normalize the domain so colors spread across skewed distributions:
+    const sqrtNorm = d3.scaleSqrt().domain([0, maxBaseCount]).range([0.2, 1]).clamp(true);
+    vis.colorScale = Object.assign(
+      count => d3.interpolateYlGnBu(sqrtNorm(count)),
+      { domain: () => [0, maxBaseCount] }
+    );
 
     vis.renderLegend();
     vis.renderVis();
@@ -117,29 +122,27 @@ class BarChart {
     const container = document.querySelector(vis.config.legendElement);
     if (!container) return;
     const max = vis.colorScale.domain()[1];
-    const stops = d3.range(11).map(i => d3.interpolateYlGnBu(i / 10));
+    const stops = d3.range(11).map(i => d3.interpolateYlGnBu(0.2 + 0.8 * Math.sqrt(i / 10)));
     const clearButtonStyle = vis.selectedValues.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-        <div>
+        <div style="flex: 1; min-width: 0;">
           <div class="legend-gradient-bar" style="background: linear-gradient(to right, ${stops.join(',')})"></div>
           <div class="legend-gradient-labels">
             <span>0 calls</span>
             <span>${Math.round(max)} calls</span>
           </div>
         </div>
-        <button class="chart-clear-btn" data-chart="bar-${Math.random()}" style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; ${clearButtonStyle}">Clear</button>
+        <button class="chart-clear-btn" style="${clearButtonStyle}">Clear</button>
       </div>`;
     
     const btn = container.querySelector('.chart-clear-btn');
     if (btn) {
       btn.addEventListener('mouseover', function() {
-        if (vis.selectedValues.length > 0) {
-          this.style.backgroundColor = '#000000';
-        }
+        if (vis.selectedValues.length > 0) this.style.backgroundColor = '#7f1d1d';
       });
       btn.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = '#e74c3c';
+        this.style.backgroundColor = '';
       });
       btn.addEventListener('click', function() {
         if (vis.selectedValues.length > 0 && vis.config.onBarSelect) {

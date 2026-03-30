@@ -113,7 +113,8 @@ const globalState = {
   timelineDateField: 'dateReceived',
   selectedDateRange: null,
   selectedPoint: null,
-  brushedPoints: [] // Placeholder for future brushing
+  brushedPoints: [],
+  colorOverrides: {}  // { [colorBy]: { [category]: '#hexcolor' } }
 };
 
 // Central State Updater
@@ -247,28 +248,6 @@ d3.csv('data/311_sampled_5000.csv')
       map: leafletMap.theMap
     }, allData);
 
-    // Brush Map toggle button for selecting points by drawing a rectangle on the map
-    const brushMapBtn = document.createElement('button');
-    brushMapBtn.id        = 'brush-map-btn';
-    brushMapBtn.className = 'map-style-toggle';
-    brushMapBtn.type      = 'button';
-    brushMapBtn.textContent = '⬚  Brush Map: Off';
-    brushMapBtn.addEventListener('click', () => {
-      const isNowOn = leafletMap.toggleBrushMode();
-      if (isNowOn) {
-        brushMapBtn.textContent       = '⬚  Brush Map: ON';
-        brushMapBtn.style.background  = '#bee3f8';
-        brushMapBtn.style.borderColor = '#63b3ed';
-        brushMapBtn.style.color       = '#1a365d';
-      } else {
-        brushMapBtn.textContent       = '⬚  Brush Map: Off';
-        brushMapBtn.style.background  = '';
-        brushMapBtn.style.borderColor = '';
-        brushMapBtn.style.color       = '';
-      }
-    });
-    document.querySelector('.toolbar-panel').appendChild(brushMapBtn);
-
     // Initialize Neighborhood Heatmap
     console.log('🔥 Loading Neighborhood Heatmap...');
     const heatmapStart = performance.now();
@@ -351,6 +330,17 @@ d3.csv('data/311_sampled_5000.csv')
           selectedDateRange: null,
           selectedPoint: null
         });
+      },
+      onBrushMapToggle: () => leafletMap.toggleBrushMode(),
+      onColorOverride: (colorBy, category, color) => {
+        const overrides = { ...(globalState.colorOverrides || {}) };
+        overrides[colorBy] = { ...(overrides[colorBy] || {}), [category]: color };
+        setGlobalState({ colorOverrides: overrides });
+      },
+      onColorReset: (colorBy) => {
+        const overrides = { ...(globalState.colorOverrides || {}) };
+        delete overrides[colorBy];
+        setGlobalState({ colorOverrides: overrides });
       }
     });
     const filterEnd = performance.now();
@@ -365,6 +355,7 @@ d3.csv('data/311_sampled_5000.csv')
       xKey: 'srType',
       yKey: 'Requests',
       scrollable: true,
+      topN: 10,
       label: 'Request Type',
       onBarSelect: srTypes => {
         setGlobalState({ selectedSrTypes: srTypes, selectedPoint: null });
