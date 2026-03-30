@@ -112,7 +112,11 @@ class TimelineChart {
         vis.positionTooltip(event);
       })
       .on('mouseleave.bartooltip', function () {
-        vis.tooltip.style('opacity', 0);
+        if (vis.selectedDateRange) {
+          vis.showSelectedRangeTooltip(vis.selectedDateRange[0], vis.selectedDateRange[1]);
+        } else {
+          vis.tooltip.style('opacity', 0);
+        }
       });
 
     // Resize listener
@@ -161,10 +165,12 @@ class TimelineChart {
     // Sync the brush rectangle to match the current selectedDateRange
     if (!vis.selectedDateRange) {
       vis.brushG.call(vis.brush.move, null);
+      vis.tooltip.style('opacity', 0);
     } else {
       var x0 = Math.max(0, Math.min(vis.width, vis.xScale(vis.selectedDateRange[0])));
       var x1 = Math.max(0, Math.min(vis.width, vis.xScale(vis.selectedDateRange[1])));
       vis.brushG.call(vis.brush.move, [x0, x1]);
+      vis.showSelectedRangeTooltip(vis.selectedDateRange[0], vis.selectedDateRange[1]);
     }
   }
 
@@ -268,7 +274,11 @@ class TimelineChart {
         d3.select(this)
           .attr('fill', isInRange(d) ? '#4299e1' : '#cbd5e0')
           .attr('opacity', isInRange(d) ? 0.88 : 0.3);
-        vis.tooltip.style('opacity', 0);
+        if (vis.selectedDateRange) {
+          vis.showSelectedRangeTooltip(vis.selectedDateRange[0], vis.selectedDateRange[1]);
+        } else {
+          vis.tooltip.style('opacity', 0);
+        }
       });
 
     // ─── Trendline ───
@@ -356,6 +366,28 @@ class TimelineChart {
       )
       .style('left', ((event.sourceEvent && event.sourceEvent.pageX) ? event.sourceEvent.pageX : 16) + 'px')
       .style('top', ((event.sourceEvent && event.sourceEvent.pageY) ? event.sourceEvent.pageY : 16) + 'px');
+  }
+
+  showSelectedRangeTooltip(startDate, endDate) {
+    const vis = this;
+    if (!startDate || !endDate) return;
+    const panel = document.querySelector('.timeline-panel');
+    if (!panel) return;
+
+    const fmt = d3.timeFormat('%b %d, %Y');
+    const rect = panel.getBoundingClientRect();
+
+    vis.tooltip
+      .style('opacity', 1)
+      .style('z-index', 1000000)
+      .html(
+        '<div class="tooltip-label timeline-tooltip">' +
+          '<strong>From:</strong> ' + fmt(startDate) + '<br>' +
+          '<strong>To:</strong> ' + fmt(endDate) +
+        '</div>'
+      )
+      .style('left', (rect.left + rect.width / 2 - 60) + 'px')
+      .style('top', (rect.top - 52) + 'px');
   }
 
   /* ────────────────────────────────────────────
