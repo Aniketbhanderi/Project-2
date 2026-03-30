@@ -136,10 +136,6 @@
     ensureTutorialMarkup()
       .then(function () {
         bindEvents();
-        if (!localStorage.getItem(TUTORIAL_KEY)) {
-          currentStepIndex = 0;
-          openTutorial(true);
-        }
       })
       .catch(function () {
         // Keep app functional even if tutorial template fails to load.
