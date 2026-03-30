@@ -266,4 +266,4 @@ Our team used AI as a collaborative development tool. It assisted in answering b
 
 ---
 
-*CS 6024 — Information Visualization | Project 2 | Spring 2026*  
+*CS 6024 | Project 2 | Spring 2026*  
