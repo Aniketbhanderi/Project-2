@@ -64,8 +64,12 @@ class NeighborhoodHeatmap {
     const baseCounts = d3.rollups(baseData, v => v.length, d => (d.NEIGHBORHOOD || '').trim() || 'Unknown')
       .map(([, count]) => count);
     const baseExtent = d3.extent(baseCounts);
-    vis.colorScale = d3.scaleSequential(d3.interpolateYlGnBu)
-      .domain(baseExtent[0] === baseExtent[1] ? [baseExtent[0], baseExtent[0] + 1] : baseExtent);
+    const domain = baseExtent[0] === baseExtent[1] ? [baseExtent[0], baseExtent[0] + 1] : baseExtent;
+    const sqrtNorm = d3.scaleSqrt().domain(domain).range([0.2, 1]).clamp(true);
+    vis.colorScale = Object.assign(
+      count => d3.interpolateYlGnBu(sqrtNorm(count)),
+      { domain: () => domain }
+    );
 
     vis.totalCount = d3.sum(vis.tilesData, d => d.count);
     vis.renderLegend();
@@ -78,29 +82,27 @@ class NeighborhoodHeatmap {
     const container = document.querySelector(vis.config.legendElement);
     if (!container || !vis.colorScale) return;
     const max = vis.colorScale.domain()[1];
-    const stops = d3.range(11).map(i => d3.interpolateYlGnBu(i / 10));
+    const stops = d3.range(11).map(i => d3.interpolateYlGnBu(0.2 + 0.8 * Math.sqrt(i / 10)));
     const clearButtonStyle = vis.selectedNeighborhoods.length > 0 ? 'opacity: 1; cursor: pointer;' : 'opacity: 0.4; cursor: not-allowed;';
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-        <div>
+        <div style="flex: 1; min-width: 0;">
           <div class="legend-gradient-bar" style="background: linear-gradient(to right, ${stops.join(',')})"></div>
           <div class="legend-gradient-labels">
             <span>0 calls</span>
             <span>${Math.round(max)} calls</span>
           </div>
         </div>
-        <button class="chart-clear-btn" data-chart="heatmap-${Math.random()}" style="background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; ${clearButtonStyle}">Clear</button>
+        <button class="chart-clear-btn" style="${clearButtonStyle}">Clear</button>
       </div>`;
     
     const btn = container.querySelector('.chart-clear-btn');
     if (btn) {
       btn.addEventListener('mouseover', function() {
-        if (vis.selectedNeighborhoods.length > 0) {
-          this.style.backgroundColor = '#000000';
-        }
+        if (vis.selectedNeighborhoods.length > 0) this.style.backgroundColor = '#7f1d1d';
       });
       btn.addEventListener('mouseleave', function() {
-        this.style.backgroundColor = '#e74c3c';
+        this.style.backgroundColor = '';
       });
       btn.addEventListener('click', function() {
         if (vis.selectedNeighborhoods.length > 0 && vis.config.onTileSelect) {
@@ -135,7 +137,7 @@ class NeighborhoodHeatmap {
 
     vis.svg.attr('width', width).attr('height', height);
 
-    const colorScale = vis.colorScale || d3.scaleSequential(d3.interpolateYlGnBu).domain([0, 1]);
+    const colorScale = vis.colorScale || (count => d3.interpolateYlGnBu(0.3 + 0.5 * count));
 
     const tiles = vis.g
       .selectAll('.heatmap-tile')

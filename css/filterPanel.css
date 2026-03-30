@@ -45,7 +45,8 @@
   background: #d9e2ec;
 }
 
-.city-heatmap-toggle.active {
+.city-heatmap-toggle.active,
+.map-style-toggle.active {
   background: #c7f9cc;
   border-color: #78c686;
   color: #0b4f1f;
@@ -71,7 +72,7 @@
 }
 
 .legend-swatch-list {
-  max-height: 130px;
+  max-height: 180px;
   overflow-y: auto;
 }
 
@@ -89,6 +90,45 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+
+/* Color picker — styled to look like the legend swatch */
+.legend-color-picker {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  padding: 0;
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: none;
+  overflow: hidden;
+}
+.legend-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.legend-color-picker::-webkit-color-swatch { border: none; border-radius: 1px; }
+.legend-color-picker::-moz-color-swatch { border: none; border-radius: 1px; }
+
+/* Reset colors button */
+.legend-reset-btn {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 3px 0;
+  font-size: 9px;
+  font-weight: 600;
+  color: #486581;
+  background: #f0f4f8;
+  border: 1px solid #bcccdc;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+.legend-reset-btn:hover {
+  background: #d9e2ec;
+  color: #243b53;
 }
 
 .legend-swatch-label {

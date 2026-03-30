@@ -7,6 +7,7 @@ class FilterPanel {
     this.colorBySelector = document.querySelector('#color-by-selector');
     this.mapStyleToggle = document.querySelector('#map-style-toggle');
     this.cityHeatmapToggle = document.querySelector('#city-heatmap-toggle');
+    this.brushMapBtn = document.querySelector('#brush-map-btn');
     this.filterSummary = document.querySelector('#filter-summary');
     this.selectedPointPanel = document.querySelector('.selected-point-panel');
     this.selectedPointDetails = document.querySelector('#selected-point-details');
@@ -39,6 +40,16 @@ class FilterPanel {
       this.cityHeatmapToggle.addEventListener('click', () => {
         const isOn = this.cityHeatmapToggle.textContent.includes('On');
         this.config.onFilterChange({ showCityHeatmap: !isOn });
+      });
+    }
+
+    if (this.brushMapBtn) {
+      this.brushMapBtn.addEventListener('click', () => {
+        if (this.config.onBrushMapToggle) {
+          const isNowOn = this.config.onBrushMapToggle();
+          this.brushMapBtn.textContent = isNowOn ? 'Brush Map: On' : 'Brush Map: Off';
+          this.brushMapBtn.classList.toggle('active', isNowOn);
+        }
       });
     }
 
@@ -84,31 +95,62 @@ class FilterPanel {
           <span>${Math.round(maxDays)} days</span>
         </div>`;
     } else if (globalState.colorBy === 'priority') {
-      // Use the same fixed color map as the pie chart
       const labelMap = { 'STANDARD': 'Standard', 'HAZARDOUS': 'Hazardous', 'PRIORITY': 'Priority' };
-      const items = Object.entries(PRIORITY_COLORS).map(([key, color]) => `
-        <div class="legend-swatch-item">
-          <span class="legend-swatch" style="background:${color}"></span>
-          <span class="legend-swatch-label">${labelMap[key] || key}</span>
-        </div>`).join('');
-      this.colorLegend.innerHTML = `<div class="legend-swatch-list">${items}</div>`;
+      const priorityOverrides = (globalState.colorOverrides || {}).priority || {};
+      const hasOverrides = Object.keys(priorityOverrides).length > 0;
+      const items = Object.entries(PRIORITY_COLORS).map(([key, defaultColor]) => {
+        const hex = d3.color(priorityOverrides[key] || defaultColor)?.formatHex() || defaultColor;
+        return `
+          <div class="legend-swatch-item">
+            <input type="color" class="legend-color-picker" value="${hex}" data-category="${key}" title="Customize color">
+            <span class="legend-swatch-label">${labelMap[key] || key}</span>
+          </div>`;
+      }).join('');
+      const resetHtml = hasOverrides ? `<button class="legend-reset-btn">Reset colors</button>` : '';
+      this.colorLegend.innerHTML = `<div class="legend-swatch-list">${items}</div>${resetHtml}`;
+      this._bindColorPickerEvents('priority');
     } else {
-      // Ordinal scale for neighborhood and agency
+      // Ordinal scale for neighborhood, agency, and srType
       const accessor = {
         neighborhood: d => d.NEIGHBORHOOD || 'Unknown',
         agency:       d => d.DEPT_NAME    || 'Unknown',
+        srType:       d => d.srType       || 'Unknown',
       }[globalState.colorBy];
 
       const categories = [...new Set(filteredData.map(accessor))].sort(d3.ascending);
-      const scale = d3.scaleOrdinal(d3.schemeTableau10).domain(categories);
+      const scale = d3.scaleOrdinal(CATEGORICAL_PALETTE).domain(categories);
+      const overrides = (globalState.colorOverrides || {})[globalState.colorBy] || {};
+      const hasOverrides = categories.some(cat => overrides[cat]);
 
-      const items = categories.map(cat => `
-        <div class="legend-swatch-item">
-          <span class="legend-swatch" style="background:${scale(cat)}"></span>
-          <span class="legend-swatch-label">${cat}</span>
-        </div>`).join('');
+      const items = categories.map(cat => {
+        const hex = d3.color(overrides[cat] || scale(cat))?.formatHex() || '#cccccc';
+        const safeAttr = cat.replace(/"/g, '&quot;');
+        return `
+          <div class="legend-swatch-item">
+            <input type="color" class="legend-color-picker" value="${hex}" data-category="${safeAttr}" title="Customize color">
+            <span class="legend-swatch-label">${cat}</span>
+          </div>`;
+      }).join('');
+      const resetHtml = hasOverrides ? `<button class="legend-reset-btn">Reset colors</button>` : '';
+      this.colorLegend.innerHTML = `<div class="legend-swatch-list">${items}</div>${resetHtml}`;
+      this._bindColorPickerEvents(globalState.colorBy);
+    }
+  }
 
-      this.colorLegend.innerHTML = `<div class="legend-swatch-list">${items}</div>`;
+  _bindColorPickerEvents(colorBy) {
+    this.colorLegend.querySelectorAll('.legend-color-picker').forEach(input => {
+      input.addEventListener('change', e => {
+        const category = e.target.getAttribute('data-category');
+        if (this.config.onColorOverride) {
+          this.config.onColorOverride(colorBy, category, e.target.value);
+        }
+      });
+    });
+    const resetBtn = this.colorLegend.querySelector('.legend-reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (this.config.onColorReset) this.config.onColorReset(colorBy);
+      });
     }
   }
 
@@ -174,10 +216,18 @@ class FilterPanel {
       this.selectedPointDetails.innerHTML = '';
     } else {
       this.selectedPointPanel.style.display = 'block';
-      const rows = Object.entries(globalState.selectedPoint).map(([key, value]) => {
-        const safeValue = value === null || value === undefined || value === '' ? 'N/A' : value;
-        return `<div class="detail-row"><span class="detail-key">${key}:</span> ${safeValue}</div>`;
-      });
+      const excludeFields = new Set(['MISSING_GPS', 'latitude', 'longitude', 'srType', 'dateReceived', 'dateResolved']);
+      const rows = Object.entries(globalState.selectedPoint)
+        .filter(([key]) => !excludeFields.has(key))
+        .map(([key, value]) => {
+          let display = (value === null || value === undefined || value === '') ? 'N/A' : value;
+          // Format date fields to YYYY-MM-DD to match DATE_CREATED
+          if ((key === 'DATE_CLOSED' || key === 'DATE_LAST_UPDATE') && display !== 'N/A') {
+            const d = new Date(display);
+            if (!isNaN(d.getTime())) display = d.toISOString().slice(0, 10);
+          }
+          return `<div class="detail-row"><span class="detail-key">${key}:</span> ${display}</div>`;
+        });
       this.selectedPointDetails.innerHTML = rows.join('');
     }
   }

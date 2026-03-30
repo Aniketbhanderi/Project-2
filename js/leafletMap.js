@@ -1,3 +1,16 @@
+// 32-color palette for ordinal categorical scales (agency, neighborhood, srType).
+// Drawn from multiple D3 schemes to ensure no two categories share the same color
+// even when there are more than 10 unique values.
+const CATEGORICAL_PALETTE = [
+  '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+  '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5',
+  '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5',
+  '#393b79', '#637939', '#8c6d31', '#843c39', '#7b4173',
+  '#17475e', '#3b6e37', '#6b2d2d', '#455a3e', '#3d3d3d',
+  '#f0a500', '#00897b',
+];
+
 class LeafletMap {
 
   /**
@@ -16,7 +29,7 @@ class LeafletMap {
     this.colorBy = 'timeGap';
     this.mapStyle = 'aerial';
     this.selectedPoint = null;
-    this.ordinalScale = d3.scaleOrdinal(d3.schemeTableau10);
+    this.ordinalScale = d3.scaleOrdinal(CATEGORICAL_PALETTE);
     this.brushMode = false;
     this.initVis();
   }
@@ -95,10 +108,12 @@ class LeafletMap {
 
     vis.brushSvg.append('style').text(`
       #map-brush-svg .selection {
-        fill: #3182ce; fill-opacity: 0.08;
-        stroke: #3182ce; stroke-width: 1.5; stroke-dasharray: 5 3;
+        fill: #3b82f6; fill-opacity: 0.07;
+        stroke: #3b82f6; stroke-width: 1;
+        stroke-dasharray: none;
       }
-      #map-brush-svg .handle { fill: #3182ce; opacity: 0.4; }
+      #map-brush-svg .handle { fill: #3b82f6; opacity: 0.55; rx: 3; }
+      #map-brush-svg .overlay { cursor: crosshair; }
     `);
 
     vis.brushG = vis.brushSvg.append('g');
@@ -235,6 +250,8 @@ class LeafletMap {
 
     const categories = vis.colorBy === 'neighborhood'
       ? [...new Set(vis.colorData.map(d => d.NEIGHBORHOOD || 'Unknown'))]
+      : vis.colorBy === 'srType'
+      ? [...new Set(vis.colorData.map(d => d.srType || 'Unknown'))]
       : [...new Set(vis.colorData.map(d => d.DEPT_NAME || 'Unknown'))];
 
     vis.ordinalScale.domain(categories.sort(d3.ascending));
@@ -242,6 +259,7 @@ class LeafletMap {
 
   getPointColor(d) {
     const vis = this;
+    const overrides = (globalState.colorOverrides || {})[vis.colorBy] || {};
 
     if (vis.colorBy === 'timeGap') {
       const days = vis.getTimeGapDays(d);
@@ -249,14 +267,22 @@ class LeafletMap {
     }
 
     if (vis.colorBy === 'neighborhood') {
-      return vis.ordinalScale(d.NEIGHBORHOOD || 'Unknown');
+      const cat = d.NEIGHBORHOOD || 'Unknown';
+      return overrides[cat] || vis.ordinalScale(cat);
     }
 
     if (vis.colorBy === 'priority') {
-      return PRIORITY_COLORS[d.PRIORITY || 'Unknown'] || PRIORITY_COLOR_DEFAULT;
+      const cat = d.PRIORITY || 'Unknown';
+      return overrides[cat] || PRIORITY_COLORS[cat] || PRIORITY_COLOR_DEFAULT;
     }
 
-    return vis.ordinalScale(d.DEPT_NAME || 'Unknown');
+    if (vis.colorBy === 'srType') {
+      const cat = d.srType || 'Unknown';
+      return overrides[cat] || vis.ordinalScale(cat);
+    }
+
+    const cat = d.DEPT_NAME || 'Unknown';
+    return overrides[cat] || vis.ordinalScale(cat);
   }
 
   getPointOpacity(d) {
@@ -308,8 +334,8 @@ class LeafletMap {
           .style('opacity', 1)
           .style('z-index', 1000000)
           .html(`<div class="tooltip-label">
-            <strong>Call Date:</strong> ${d.DATE_CREATED || d.DATE_TIME_RECEIVED || 'N/A'}<br>
-            <strong>Last Update Date:</strong> ${d.DATE_LAST_UPDATE || d.DATE_CLOSED || 'N/A'}<br>
+            <strong>Call Date:</strong> ${d.DATE_CREATED || 'N/A'}<br>
+            <strong>Last Update Date:</strong> ${(raw => { const p = new Date(raw); return raw && !isNaN(p) ? p.toISOString().slice(0,10) : 'N/A'; })(d.DATE_LAST_UPDATE || d.DATE_CLOSED)}<br>
             <strong>Agency:</strong> ${d.DEPT_NAME || 'N/A'}<br>
             <strong>Call Type:</strong> ${d.SR_TYPE || 'N/A'}<br>
             <strong>Description:</strong> ${d.SR_TYPE_DESC || d.GROUP_DESC || 'N/A'}

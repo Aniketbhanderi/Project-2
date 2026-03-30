@@ -79,9 +79,17 @@
   pointer-events: none;
 }
 
+/* Y-axis label */
+.timeline-y-label {
+  font-size: 9px;
+  font-weight: 600;
+  fill: #627d98;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
 /* X Axis */
 .timeline-x-axis .tick text {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   fill: #334e68;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -97,7 +105,7 @@
 
 /* Y Axis */
 .timeline-y-axis .tick text {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   fill: #334e68;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -113,15 +121,20 @@
 
 /* Brush selection rectangle */
 .timeline-brush .selection {
-  fill: #4299e1;
-  fill-opacity: 0.15;
-  stroke: #2b6cb0;
+  fill: #3b82f6;
+  fill-opacity: 0.12;
+  stroke: #2563eb;
   stroke-width: 1;
 }
 
 .timeline-brush .handle {
-  fill: #2b6cb0;
-  stroke: #1a365d;
+  fill: #2563eb;
+  stroke: none;
+  rx: 2;
+}
+
+.timeline-brush .overlay {
+  cursor: crosshair;
 }
 
 /* Tooltip content */
