@@ -72,9 +72,11 @@ body {
   overflow-y: auto;
 }
 
-/* Move Leaflet zoom controls to right of left panel */
+/* Align Leaflet zoom controls inline with the header panel */
 .leaflet-top.leaflet-left {
-  left: calc(55px + clamp(200px, 20vw, 270px) + 4px);
+  top: 8px;
+  padding-top: 0;
+  left: calc(12px + clamp(200px, 20vw, 270px));
 }
 
 /* ── Timeline panel: bottom center ───────────────────────── */
@@ -176,7 +178,7 @@ body {
     width: clamp(180px, 42vw, 240px);
   }
   .leaflet-top.leaflet-left {
-    left: calc(12px + clamp(180px, 42vw, 240px) + 4px);
+    left: calc(12px + clamp(180px, 42vw, 240px) + 8px);
   }
   .charts-panel {
     width: clamp(180px, 38vw, 260px);
@@ -221,21 +223,23 @@ button[data-control="basemap"].boundaries {
 .chart-clear-btn,
 button[data-control="clear-selection"],
 .leaflet-control-clear {
-  background-color: #d93a2f !important;
-  color: #ffffff !important;
-  border: 1px solid #b72c23 !important;
-  border-radius: 6px;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 10px;
   font-weight: 700;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
 }
 
-/* Clear selection hover: black */
+/* Clear selection hover: deep red */
 #clear-selection:hover,
 .chart-clear-btn:hover,
 button[data-control="clear-selection"]:hover,
 .leaflet-control-clear:hover {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border-color: #000000 !important;
+  background-color: #7f1d1d;
 }
 
