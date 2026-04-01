@@ -43,9 +43,28 @@ function startTimelineAnimation() {
 
   var minDate = d3.min(validDates);
   var maxDate = d3.max(validDates);
-  var windowMs = 15 * 86400000;
-  var currentStart = new Date(minDate.getTime());
-  var currentEnd = new Date(currentStart.getTime() + windowMs);
+  var defaultWindowMs = 15 * 86400000;
+  var windowMs;
+  var currentStart;
+  var currentEnd;
+
+  if (globalState.selectedDateRange && globalState.selectedDateRange.length === 2) {
+    var selStart = globalState.selectedDateRange[0];
+    var selEnd = globalState.selectedDateRange[1];
+    if (selStart && selEnd && selEnd > selStart) {
+      windowMs = selEnd.getTime() - selStart.getTime();
+      currentStart = new Date(selStart.getTime());
+      currentEnd = new Date(selEnd.getTime());
+    } else {
+      windowMs = defaultWindowMs;
+      currentStart = new Date(minDate.getTime());
+      currentEnd = new Date(currentStart.getTime() + windowMs);
+    }
+  } else {
+    windowMs = defaultWindowMs;
+    currentStart = new Date(minDate.getTime());
+    currentEnd = new Date(currentStart.getTime() + windowMs);
+  }
 
   setGlobalState({ selectedDateRange: [currentStart, currentEnd], selectedPoint: null });
   showAnimationTooltip(currentStart, currentEnd);
